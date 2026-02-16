@@ -1,0 +1,71 @@
+{% extends 'nids_app/base.html' %}
+{% block content %}
+<div class="container mt-4">
+  <h2>Hybrid Detection (Background Mode)</h2>
+
+  <button id="startBtn" class="btn">Run Hybrid Detection (Background)</button>
+  <div id="status" class="mt-3 text-light bg-dark p-3 rounded" style="min-height:200px; white-space:pre-wrap; font-family:monospace;">
+    Status: Waiting...
+  </div>
+
+  <div class="mt-3">
+    <a href="{% url 'download_hybrid' %}" id="downloadBtn" class="btn" style="display:none;">Download hybrid_output.csv</a>
+  </div>
+
+  <div style="margin-top:12px">
+    <a href="/" class="btn">Back to Home</a>
+  </div>
+</div>
+
+<script>
+async function startHybrid() {
+  document.getElementById("status").textContent = "Starting Hybrid Detection...";
+  // POST to background-run endpoint
+  const resp = await fetch("{% url 'run_hybrid_background' %}", {
+    method: 'POST',
+    headers: {
+      'X-CSRFToken': getCookie('csrftoken'),
+      'X-Requested-With': 'XMLHttpRequest'
+    }
+  });
+  const data = await resp.json();
+  if (data.status === "started") {
+    pollStatus();
+  } else {
+    document.getElementById("status").textContent = data.message || JSON.stringify(data);
+  }
+}
+
+async function pollStatus() {
+  const interval = setInterval(async () => {
+    const res = await fetch("{% url 'hybrid_status' %}");
+    const data = await res.json();
+    document.getElementById("status").textContent = data.log || JSON.stringify(data);
+    if (data.status === "completed" || data.status === "error") {
+      clearInterval(interval);
+      if (data.status === "completed") {
+        document.getElementById("downloadBtn").style.display = 'inline-block';
+      }
+    }
+  }, 2000);
+}
+
+// CSRF helper
+function getCookie(name) {
+  let cookieValue = null;
+  if (document.cookie && document.cookie !== '') {
+    const cookies = document.cookie.split(';');
+    for (let i = 0; i < cookies.length; i++) {
+      const cookie = cookies[i].trim();
+      if (cookie.substring(0, name.length + 1) === (name + '=')) {
+        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+        break;
+      }
+    }
+  }
+  return cookieValue;
+}
+
+document.getElementById("startBtn").addEventListener("click", startHybrid);
+</script>
+{% endblock %}

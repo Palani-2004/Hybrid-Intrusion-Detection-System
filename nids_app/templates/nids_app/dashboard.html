@@ -1,0 +1,192 @@
+{% extends "nids_app/base.html" %}
+{% block title %}Hybrid IDS Dashboard{% endblock %}
+{% block content %}
+
+<style>
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+}
+
+.chart-box {
+    background: #0b1220;
+    padding: 24px;
+    border-radius: 14px;
+}
+
+.details-box {
+    background: #161b22;
+    padding: 20px;
+    border-radius: 12px;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+.details-box h3,
+.details-box h4 {
+    margin-top: 16px;
+    color: #f85149;
+}
+
+.details-box p,
+.details-box li {
+    line-height: 1.6;
+}
+
+.confidence-bar {
+    background: #30363d;
+    border-radius: 8px;
+    overflow: hidden;
+    margin-bottom: 12px;
+}
+
+.confidence-fill {
+    padding: 6px;
+    font-weight: bold;
+    text-align: right;
+    transition: width 0.6s ease;
+}
+</style>
+
+<div class="dashboard-grid">
+
+    <div class="chart-box">
+        <h3>Attack Distribution</h3>
+        <canvas id="idsDonut"></canvas>
+
+        <p class="muted" style="margin-top:10px">
+            Click <b>Malicious</b> to explore intrusion types
+        </p>
+
+        <button id="backBtn"
+                class="btn"
+                style="display:none;margin-top:10px"
+                onclick="resetDonut()">
+            ← Back
+        </button>
+    </div>
+
+    <div id="attackDetails" class="details-box">
+        <h3>No active intrusion selected</h3>
+        <p>Click an intrusion to view full technical details.</p>
+    </div>
+
+</div>
+
+<script>
+fetch("/api/dashboard-data/")
+.then(res => res.json())
+.then(data => {
+
+    const ctx = document.getElementById("idsDonut").getContext("2d");
+    let state = "overview";
+    let chart;
+
+    const benign = data.benign;
+    const malicious = data.malicious;
+
+    const attackColors = data.attacks.map((_, i) =>
+        ["#ff4d4d", "#ffa500", "#1abc9c", "#9b59b6", "#3498db"][i % 5]
+    );
+
+    chart = new Chart(ctx, {
+        type: "doughnut",
+        data: {
+            labels: ["Benign", "Malicious"],
+            datasets: [{
+                data: [benign, malicious],
+                backgroundColor: ["#2ecc71", "#e74c3c"],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            cutout: "65%",
+            animation: { animateRotate: true, duration: 700 },
+            plugins: { legend: { display: false } },
+            onClick(evt, elements) {
+                if (!elements.length) return;
+
+                const idx = elements[0].index;
+
+                if (state === "overview" && idx === 1) {
+                    drillDown();
+                } else if (state === "drilldown") {
+                    showAttack(data.attacks[idx]);
+                }
+            }
+        }
+    });
+
+    function drillDown() {
+        state = "drilldown";
+        document.getElementById("backBtn").style.display = "inline-block";
+
+        chart.data.labels = data.attacks.map(a => a.name);
+        chart.data.datasets[0].data = data.attacks.map(a => a.count);
+        chart.data.datasets[0].backgroundColor = attackColors;
+        chart.update();
+    }
+
+    window.resetDonut = function () {
+        state = "overview";
+        document.getElementById("backBtn").style.display = "none";
+
+        chart.data.labels = ["Benign", "Malicious"];
+        chart.data.datasets[0].data = [benign, malicious];
+        chart.data.datasets[0].backgroundColor = ["#2ecc71", "#e74c3c"];
+        chart.update();
+
+        document.getElementById("attackDetails").innerHTML = `
+            <h3>No active intrusion selected</h3>
+            <p>Click an intrusion to view full technical details.</p>
+        `;
+    };
+
+    function confidenceColor(pct) {
+        if (pct >= 80) return "#f85149";
+        if (pct >= 60) return "#f1c40f";
+        return "#2ea043";
+    }
+
+    function showAttack(attack) {
+        const box = document.getElementById("attackDetails");
+
+        box.innerHTML = `
+            <h3>🚨 Intrusion Detected: ${attack.name}</h3>
+            <p><strong>Severity:</strong> ${attack.severity}</p>
+
+            <h4>Machine Learning Confidence</h4>
+            <div class="confidence-bar">
+                <div class="confidence-fill"
+                     style="width:${attack.confidence}%;
+                            background:${confidenceColor(attack.confidence)};">
+                    ${attack.confidence}%
+                </div>
+            </div>
+
+            <h4>Description</h4>
+            <p>${attack.details.description}</p>
+
+            <h4>Detection Evidence</h4>
+            <ul>${attack.details.evidence.map(e => `<li>${e}</li>`).join("")}</ul>
+
+            <h4>Root Cause</h4>
+            <p>${attack.details.root_cause}</p>
+
+            <h4>Impact</h4>
+            <ul>${attack.details.impact.map(i => `<li>${i}</li>`).join("")}</ul>
+
+            <h4>Mitigation</h4>
+            <ul>${attack.details.mitigation.map(m => `<li>${m}</li>`).join("")}</ul>
+
+            <h4>Final Verdict</h4>
+            <p><strong>${attack.details.final_verdict}</strong></p>
+        `;
+    }
+
+});
+</script>
+
+{% endblock %}

@@ -1,0 +1,103 @@
+{% extends "nids_app/base.html" %}
+{% load static %}
+
+{% block content %}
+
+<style>
+  body {
+    background: url("{% static 'images/cyber-bg.png' %}") no-repeat center center fixed;
+    background-size: cover;
+  }
+</style>
+
+<!-- HERO SECTION -->
+<section class="hero">
+  <div class="hero-content">
+    <h1 class="hero-title">
+      Hybrid Intrusion Detection System
+    </h1>
+    <p class="hero-subtitle">
+      Ensemble Machine Learning + Signature-Based Cyber Defense
+    </p>
+
+    <div class="hero-buttons">
+      <a href="{% url 'upload_dataset' %}" class="btn-primary">
+        Start Detection
+      </a>
+      <a href="{% url 'dashboard' %}" class="btn-secondary">
+        View Dashboard
+      </a>
+    </div>
+  </div>
+
+  <div class="hero-bg"></div>
+</section>
+
+<!-- ABOUT SECTION -->
+<section class="section">
+  <h2 class="section-title">What is Hybrid IDS?</h2>
+
+  <div class="card-grid">
+    <div class="info-card">
+      <h3>Machine Learning</h3>
+      <p>
+        Detects unknown and zero-day attacks using traffic behavior and patterns.
+      </p>
+    </div>
+
+    <div class="info-card">
+      <h3>Signature Detection</h3>
+      <p>
+        Confirms known attacks using predefined intrusion signatures.
+      </p>
+    </div>
+
+    <div class="info-card">
+      <h3>Hybrid Engine</h3>
+      <p>
+        Combines ML confidence and signatures for high-accuracy decisions.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- PIPELINE SECTION -->
+<section class="section dark">
+  <h2 class="section-title">Detection Pipeline</h2>
+
+  <div class="pipeline">
+    <div class="step">Upload Data</div>
+    <div class="arrow">→</div>
+    <div class="step">Preprocess</div>
+    <div class="arrow">→</div>
+    <div class="step">ML Detection</div>
+    <div class="arrow">→</div>
+    <div class="step">Signature Validation</div>
+    <div class="arrow">→</div>
+    <div class="step">Dashboard</div>
+  </div>
+</section>
+
+<!-- FEATURES SECTION -->
+<section class="section">
+  <h2 class="section-title">Why Our IDS?</h2>
+
+  <div class="card-grid">
+    <div class="info-card glow">
+      <h3>Real-Time Detection</h3>
+      <p>Identifies malicious traffic with low false positives.</p>
+    </div>
+
+    <div class="info-card glow">
+      <h3>Explainable Attacks</h3>
+      <p>Each intrusion includes cause, impact, and mitigation.</p>
+    </div>
+
+    <div class="info-card glow">
+      <h3>Interactive Dashboard</h3>
+      <p>Hierarchical donut charts with drill-down insights.</p>
+    </div>
+  </div>
+</section>
+
+{% endblock %}

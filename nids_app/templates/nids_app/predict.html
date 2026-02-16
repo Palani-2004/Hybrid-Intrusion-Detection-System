@@ -1,0 +1,57 @@
+{% extends "nids_app/base.html" %}
+{% block title %}Prediction{% endblock %}
+
+{% block content %}
+<div class="card">
+  <h2>Prediction</h2>
+
+  <p id="narrative" class="muted"></p>
+
+  <p class="muted" style="margin-top:-6px">
+    Pipeline stage:
+    <strong>Upload → Preprocess → Train → Predict → Hybrid</strong>
+  </p>
+
+  <p class="muted">
+    Prediction applies the trained machine learning model to unseen network traffic.
+  </p>
+
+  <p class="muted">
+    Each flow is assigned a probability score representing the likelihood of malicious behavior.
+    At this stage, detection is purely statistical.
+  </p>
+
+  <p class="muted">
+    Signature-based validation is applied in the next stage.
+  </p>
+
+  <form method="post" style="margin-top:12px">
+    {% csrf_token %}
+    <button class="btn">Run Prediction</button>
+  </form>
+
+  {% if output %}
+    <pre class="log" style="margin-top:12px">{{ output }}</pre>
+  {% endif %}
+
+  {% if predicted %}
+    <a href="{% url 'hybrid' %}" class="btn btn-next">
+      Proceed to Hybrid →
+    </a>
+  {% endif %}
+</div>
+
+<script>
+{% if predicted %}
+typeWriter(
+  "narrative",
+  "Prediction complete. Machine learning probabilities generated for each traffic flow."
+);
+{% else %}
+typeWriter(
+  "narrative",
+  "Prediction phase ready. The trained model will now evaluate unseen traffic."
+);
+{% endif %}
+</script>
+{% endblock %}

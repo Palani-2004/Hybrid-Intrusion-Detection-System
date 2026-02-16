@@ -1,0 +1,10 @@
+{% extends 'nids_app/base.html' %}
+{% block title %}Training Result{% endblock %}
+
+
+{% block content %}
+<div class="bg-white rounded-lg shadow p-6 max-w-3xl mx-auto">
+<h2 class="text-xl font-semibold">Training Result</h2>
+<pre class="bg-black text-green-300 p-3 rounded h-64 overflow-auto">{{ output|default:'(no output)' }}</pre>
+</div>
+{% endblock %}

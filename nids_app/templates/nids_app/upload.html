@@ -1,0 +1,107 @@
+{% extends 'nids_app/base.html' %}
+{% load static %}
+{% block title %}Upload Dataset{% endblock %}
+
+{% block content %}
+<div class="card">
+  <h2>Upload raw CSV</h2>
+
+  <!-- TYPEWRITER NARRATIVE -->
+  <p id="narrative" class="muted"></p>
+
+  <p class="muted" style="margin-top:-6px">
+    Pipeline stage:
+    <strong>Upload → Preprocess → Train → Predict → Hybrid</strong>
+  </p>
+
+  <p class="muted">
+    This system implements a <strong>Hybrid Intrusion Detection System (IDS)</strong>,
+    which combines the strengths of <strong>machine learning</strong> and
+    <strong>signature-based detection</strong> to identify malicious network activity.
+  </p>
+
+  <p class="muted">
+    In real-world cybersecurity environments, relying on only one detection method
+    often leads to missed attacks or false alarms. Hybrid IDS addresses this by
+    unifying statistical learning with rule-based validation.
+  </p>
+
+  <p class="muted">
+    The pipeline consists of five logically ordered stages:
+  </p>
+
+  <ul class="muted">
+    <li><strong>Upload</strong> — ingestion of raw network traffic data</li>
+    <li><strong>Preprocess</strong> — cleaning, normalization, and label alignment</li>
+    <li><strong>Train</strong> — learning attack patterns from labeled data</li>
+    <li><strong>Predict</strong> — assigning risk scores to unseen traffic</li>
+    <li><strong>Hybrid</strong> — combining ML output with known attack signatures</li>
+  </ul>
+
+  <!-- SECTION DIVIDER -->
+  <img src="{% static 'images/network-lines.png' %}"
+       class="section-divider"
+       alt="Network Flow">
+
+  <p class="muted">
+    You may execute the pipeline in two modes:
+  </p>
+
+  <ul class="muted">
+    <li>
+      <strong>Fully Automated Mode</strong> — executes all stages in sequence and
+      immediately displays the final dashboard. This is ideal for demonstrations
+      and operational use.
+    </li>
+    <li>
+      <strong>Manual / Learning Mode</strong> — allows step-by-step execution so that
+      each stage can be studied independently. This mode is designed for academic
+      understanding and experimentation.
+    </li>
+  </ul>
+
+  {% if messages %}
+    <div style="margin:8px 0">
+      {% for msg in messages %}
+        <div class="{{ msg.tags }}">{{ msg }}</div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  <!-- UPLOAD FORM -->
+  <form method="post" enctype="multipart/form-data" class="row" style="margin-top:12px">
+    {% csrf_token %}
+    <input type="file" name="file" accept=".csv" required>
+    <button class="btn" type="submit">Upload</button>
+  </form>
+
+  <div class="muted" style="margin-top:12px">
+    Example dataset: <code>cicids2017_cleaned.csv</code>
+  </div>
+
+  <hr style="margin:20px 0;">
+
+  <!-- PIPELINE MODE SELECTION -->
+  <div style="display:flex;gap:16px;flex-wrap:wrap">
+    <form method="post" action="{% url 'run_full_pipeline' %}">
+      {% csrf_token %}
+      <button class="btn btn-danger">
+        Run Full Pipeline (Automated)
+      </button>
+    </form>
+
+    <form method="get" action="{% url 'preprocess' %}">
+      <button class="btn btn-danger">
+        Run Pipeline (Manual / Learning Mode)
+      </button>
+    </form>
+  </div>
+</div>
+
+<script>
+typeWriter(
+  "narrative",
+  "System initialized. Awaiting network traffic dataset. Uploading a CSV begins the Hybrid Intrusion Detection pipeline."
+);
+</script>
+{% endblock %}

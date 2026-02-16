@@ -1,0 +1,21 @@
+{% extends "nids_app/base.html" %}
+{% block title %}Pipeline Logs{% endblock %}
+
+{% block content %}
+<h2>Automated Pipeline Logs</h2>
+
+<pre style="
+  background:#111;
+  color:#0f0;
+  padding:16px;
+  max-height:70vh;
+  overflow:auto;
+  white-space:pre-wrap;
+">
+{{ logs }}
+</pre>
+
+<a href="{% url 'upload_dataset' %}" class="btn">
+  Back to Upload
+</a>
+{% endblock %}

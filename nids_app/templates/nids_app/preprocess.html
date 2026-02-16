@@ -1,0 +1,63 @@
+{% extends "nids_app/base.html" %}
+{% block title %}Preprocess{% endblock %}
+
+{% block content %}
+<div class="card">
+  <h2>Preprocessing</h2>
+
+  <p id="narrative" class="muted"></p>
+
+  <p class="muted" style="margin-top:-6px">
+    Pipeline stage:
+    <strong>Upload → Preprocess → Train → Predict → Hybrid</strong>
+  </p>
+
+  <p class="muted">
+    Preprocessing is one of the most critical stages in any machine learning pipeline.
+    Raw network traffic data is often noisy, inconsistent, and incompatible with
+    trained models.
+  </p>
+
+  <p class="muted">
+    During this stage, the system ensures that the dataset conforms exactly to the
+    feature schema expected by the model.
+  </p>
+
+  <ul class="muted">
+    <li>Standardizing feature and column names</li>
+    <li>Normalizing attack labels (e.g., Label → Attack Type)</li>
+    <li>Removing formatting inconsistencies</li>
+    <li>Ensuring compatibility with trained models</li>
+  </ul>
+
+  <p class="muted">
+    Any mismatch at this stage would propagate downstream and cause failures during
+    training or prediction.
+  </p>
+
+  <form method="post" style="margin-top:12px">
+    {% csrf_token %}
+    <button class="btn">Run Preprocessing</button>
+  </form>
+
+  {% if success %}
+    <a href="{% url 'train' %}" class="btn btn-next">
+      Proceed to Train →
+    </a>
+  {% endif %}
+</div>
+
+<script>
+{% if success %}
+typeWriter(
+  "narrative",
+  "Preprocessing complete. Dataset is now clean, standardized, and ready for model training."
+);
+{% else %}
+typeWriter(
+  "narrative",
+  "Preprocessing in progress conceptually. Raw traffic is being cleaned and aligned with model expectations."
+);
+{% endif %}
+</script>
+{% endblock %}

@@ -1,0 +1,60 @@
+{% extends 'nids_app/base.html' %}
+{% block title %}Train Model{% endblock %}
+
+{% block content %}
+<div class="card">
+  <h2>Train model</h2>
+
+  <p id="narrative" class="muted"></p>
+
+  <p class="muted" style="margin-top:-6px">
+    Pipeline stage:
+    <strong>Upload → Preprocess → Train → Predict → Hybrid</strong>
+  </p>
+
+  <p class="muted">
+    In this stage, the system learns how to distinguish benign network traffic
+    from malicious activity using supervised machine learning.
+  </p>
+
+  <p class="muted">
+    The training process analyzes historical labeled data and extracts statistical
+    patterns that characterize different attack behaviors.
+  </p>
+
+  <p class="muted">
+    Once trained, the model becomes reusable and can be applied to new datasets
+    without retraining.
+  </p>
+
+  <form method="post" style="margin-top:12px">
+    {% csrf_token %}
+    <button class="btn">Start training</button>
+  </form>
+
+  {% if output %}
+    <h3 style="margin-top:16px">Training Output</h3>
+    <pre class="log">{{ output }}</pre>
+  {% endif %}
+
+  {% if success %}
+    <a href="{% url 'predict' %}" class="btn btn-next">
+      Proceed to Predict →
+    </a>
+  {% endif %}
+</div>
+
+<script>
+{% if success %}
+typeWriter(
+  "narrative",
+  "Training complete. The model has successfully learned network behavior patterns."
+);
+{% else %}
+typeWriter(
+  "narrative",
+  "Training initialized. The system is learning how to classify traffic using labeled examples."
+);
+{% endif %}
+</script>
+{% endblock %}

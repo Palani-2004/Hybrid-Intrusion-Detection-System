@@ -1,0 +1,6 @@
+{% extends 'nids_app/base.html' %}
+{% block content %}
+  <h2>Prediction output</h2>
+  <pre style="white-space:pre-wrap;">{{ output }}</pre>
+  <a href="{% url 'dashboard' %}">Dashboard</a>
+{% endblock %}

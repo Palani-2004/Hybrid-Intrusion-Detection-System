@@ -1,0 +1,8 @@
+data/
+*.csv
+*.h5
+*.pkl
+.venv/
+__pycache__/
+db.sqlite3
+staticfiles/
