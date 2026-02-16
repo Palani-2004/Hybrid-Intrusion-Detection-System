@@ -1,3 +1,0 @@
-git add .
-git commit -m "Moved requirements.txt into nids_project"
-git push
