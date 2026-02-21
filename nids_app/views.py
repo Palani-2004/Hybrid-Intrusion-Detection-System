@@ -14,52 +14,37 @@ from nids_app.pipeline.automated import run_full_pipeline
 from nids_app.state.pipeline_state import set_state, can_access
 
 import json
+import traceback
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from .models import Alert
-# @csrf_exempt
-# def receive_alert(request):
-#     print("METHOD:", request.method)
 
-#     if request.method == "POST":
-#         try:
-#             data = json.loads(request.body.decode("utf-8"))
-#             print("DATA:", data)
-
-#             Alert.objects.create(
-#                 ip=data.get("ip"),
-#                 attack_type=data.get("attack_type"),
-#                 severity=data.get("severity"),
-#             )
-
-#             return JsonResponse({"status": "ok"})
-
-#         except Exception as e:
-#             return JsonResponse({"error": str(e)}, status=500)
-
-#     return JsonResponse({"error": "Invalid request"})# -------------------------------------------------
 @csrf_exempt
 def receive_alert(request):
-    print("METHOD:", request.method)
+    try:
+        if request.method != "POST":
+            return JsonResponse({"error": f"Method was {request.method}"}, status=400)
 
-    if request.method == "POST":
-        try:
-            data = json.loads(request.body.decode("utf-8"))
-            print("DATA:", data)
+        data = json.loads(request.body.decode("utf-8"))
 
-            Alert.objects.create(
-                ip=data.get("ip"),
-                attack_type=data.get("attack_type"),
-                severity=data.get("severity"),
-            )
+        ip = data.get("ip")
+        attack_type = data.get("attack_type")
+        severity = data.get("severity")
 
-            return JsonResponse({"status": "ok"})
+        Alert.objects.create(
+            ip=ip,
+            attack_type=attack_type,
+            severity=severity
+        )
 
-        except Exception as e:
-            return JsonResponse({"error": str(e)}, status=500)
+        return JsonResponse({"status": "ok"})
 
-    return JsonResponse({"error": "Invalid request"})
-
+    except Exception as e:
+        return JsonResponse({
+            "error": str(e),
+            "trace": traceback.format_exc()
+        }, status=500)
+    
 def get_session_id(request):
     if not request.session.session_key:
         request.session.create()
