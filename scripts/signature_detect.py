@@ -1,21 +1,22 @@
 """
 Hybrid Signature + ML Detection Engine
-
-Reads : data/processed/processed_pred.csv
-Writes: data/processed/hybrid_output.csv
-
-Decision Logic (Professional IDS):
-1) Signature hit → escalate to Malicious
-2) Else ML probability >= threshold → Malicious
-3) Else keep ML decision
-4) Risk score computed for explainability
+Session-aware & Render-safe version
 """
 
+import sys
 from pathlib import Path
 import logging
 import re
 from typing import List
 import pandas as pd
+
+# --------------------------------------------------
+# Get Session ID
+# --------------------------------------------------
+if len(sys.argv) < 2:
+    raise Exception("Session ID not provided")
+
+session_id = sys.argv[1]
 
 # --------------------------------------------------
 # Logging
@@ -24,15 +25,17 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s: %(mes
 log = logging.getLogger(__name__)
 
 # --------------------------------------------------
-# Paths
+# Paths (SESSION BASED)
 # --------------------------------------------------
-BASE = Path(__file__).resolve().parents[1]
-DATA_DIR = BASE / "data"
-PROCESSED_DIR = DATA_DIR / "processed"
+BASE_DIR = Path(__file__).resolve().parent.parent
 
-PRED_PATH = PROCESSED_DIR / "processed_pred.csv"
-OUT_PATH = PROCESSED_DIR / "hybrid_output.csv"
-SIGNATURES_PATH = DATA_DIR / "signatures.txt"
+data_dir = BASE_DIR / "data"
+processed_dir = data_dir / "processed" / session_id
+processed_dir.mkdir(parents=True, exist_ok=True)
+
+PRED_PATH = processed_dir / "predictions.csv"
+OUT_PATH = processed_dir / "hybrid_output.csv"
+SIGNATURES_PATH = data_dir / "signatures.txt"
 
 # --------------------------------------------------
 # Thresholds / Weights
@@ -42,7 +45,7 @@ ML_WEIGHT = 0.6
 SIG_WEIGHT = 0.4
 
 # --------------------------------------------------
-# Severity Mapping (Signature Intelligence)
+# Severity Mapping
 # --------------------------------------------------
 SEVERITY_MAP = {
     "PortScan": 0.3,
@@ -126,7 +129,6 @@ def find_probability_column(df: pd.DataFrame) -> str | None:
 def hybrid_detection(df: pd.DataFrame, sigs: List[str]) -> pd.DataFrame:
     df = df.copy()
 
-    # ML probability
     prob_col = find_probability_column(df)
     if prob_col:
         df["ml_probability"] = pd.to_numeric(df[prob_col], errors="coerce")
@@ -135,7 +137,6 @@ def hybrid_detection(df: pd.DataFrame, sigs: List[str]) -> pd.DataFrame:
         df["ml_probability"] = pd.NA
         log.info("No ML probability column found.")
 
-    # ML label column
     label_col = next(
         (c for c in ["pred_label", "Predicted Attack Type", "ml_label", "Attack Type"] if c in df.columns),
         None,
@@ -154,10 +155,8 @@ def hybrid_detection(df: pd.DataFrame, sigs: List[str]) -> pd.DataFrame:
     for _, row in df.iterrows():
         hits = []
 
-        # Built-in rules
         hits.extend(builtin_rules(row))
 
-        # Text signature matching
         text_blob = " ".join(str(v) for v in row.values if pd.notna(v))
         hits.extend(match_signatures(text_blob, sigs))
 
@@ -174,7 +173,6 @@ def hybrid_detection(df: pd.DataFrame, sigs: List[str]) -> pd.DataFrame:
             + (SIG_WEIGHT * sev)
         )
 
-        # IDS decision hierarchy
         if sig_flag:
             final = "Malicious"
             reason = "signature_match"
@@ -206,7 +204,7 @@ def hybrid_detection(df: pd.DataFrame, sigs: List[str]) -> pd.DataFrame:
 # --------------------------------------------------
 def main():
     if not PRED_PATH.exists():
-        log.error("Prediction file missing. Run predict.py first.")
+        log.error(f"Prediction file missing: {PRED_PATH}")
         return
 
     log.info("Loading prediction file: %s", PRED_PATH)
@@ -219,6 +217,7 @@ def main():
     hybrid_df.to_csv(OUT_PATH, index=False)
 
     log.info("Hybrid detection completed → %s", OUT_PATH)
+
 
 if __name__ == "__main__":
     main()

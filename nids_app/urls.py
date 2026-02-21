@@ -1,7 +1,9 @@
 from django.urls import path
 from . import views
+from .views import receive_alert
 
 urlpatterns = [
+    path("api/alert/", receive_alert, name="receive_alert"),
 
     # -------------------------------------------------
     # CORE PAGES
@@ -43,5 +45,7 @@ urlpatterns = [
         "api/dashboard-data/",
         views.dashboard_data_api,
         name="dashboard_data_api",
+
+        
     ),
 ]

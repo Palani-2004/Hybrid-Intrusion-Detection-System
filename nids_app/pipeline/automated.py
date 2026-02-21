@@ -4,10 +4,10 @@ from pathlib import Path
 from django.conf import settings
 
 
-def run_full_pipeline(log_callback=None):
+def run_full_pipeline(session_id, log_callback=None):
     """
     Runs the complete Hybrid IDS pipeline in order.
-    SINGLE source of truth for automated execution.
+    Session-aware version.
     """
 
     BASE = Path(settings.BASE_DIR)
@@ -18,7 +18,7 @@ def run_full_pipeline(log_callback=None):
             log_callback(f"\n▶ Running {name}...\n")
 
         result = subprocess.run(
-            [PY, script],
+            [PY, str(script), session_id],   # ← PASS SESSION ID
             capture_output=True,
             text=True
         )
@@ -40,13 +40,8 @@ def run_full_pipeline(log_callback=None):
     predict = BASE / "scripts" / "predict.py"
     hybrid = BASE / "scripts" / "signature_detect.py"
 
-    model = BASE / "data" / "models" / "rf_clf.joblib"
-
     # ---------- PIPELINE ----------
     run(preprocess, "Preprocessing")
-
-    if not model.exists():
-        run(train, "Training Model")
-
+    run(train, "Training Model")
     run(predict, "Prediction")
     run(hybrid, "Hybrid Detection")

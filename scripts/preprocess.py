@@ -1,20 +1,36 @@
 # scripts/preprocess.py
+
 import sys
 import pandas as pd
 from pathlib import Path
 
-# Resolve project root (parent of /scripts/)
-BASE = Path(__file__).resolve().parents[1]
+# -----------------------------
+# Get session ID
+# -----------------------------
+if len(sys.argv) < 2:
+    raise Exception("Session ID not provided")
 
-# Input and output paths
-raw_path = BASE / "data" / "raw" / "input.csv"
-proc_path = BASE / "data" / "processed" / "processed.csv"
+session_id = sys.argv[1]
 
+# -----------------------------
+# Resolve project paths
+# -----------------------------
+BASE_DIR = Path(__file__).resolve().parent.parent
 
+raw_dir = BASE_DIR / "data" / "raw" / session_id
+processed_dir = BASE_DIR / "data" / "processed" / session_id
+processed_dir.mkdir(parents=True, exist_ok=True)
+
+raw_path = raw_dir / "input.csv"
+proc_path = processed_dir / "preprocessed.csv"
+
+# -----------------------------
+# Main Logic
+# -----------------------------
 def main():
-    # Fail fast if input is missing
+    # Fail fast if input missing
     if not raw_path.exists():
-        print("ERROR: data/raw/input.csv not found. Upload dataset first.")
+        print(f"ERROR: {raw_path} not found. Upload dataset first.")
         sys.exit(1)
 
     try:
@@ -28,12 +44,9 @@ def main():
             df = df.drop(columns=["Label"])
             print("Normalized Label to Attack Type")
 
-        # Ensure output directory exists
-        proc_path.parent.mkdir(parents=True, exist_ok=True)
-
-        # Write processed dataset
+        # Save processed file
         df.to_csv(proc_path, index=False)
-        print("Preprocessing complete. processed.csv written.")
+        print("Preprocessing complete.")
 
     except Exception as e:
         print("ERROR during preprocessing:")

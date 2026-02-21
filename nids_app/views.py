@@ -13,7 +13,25 @@ from .attack_knowledge import ATTACK_KNOWLEDGE
 from nids_app.pipeline.automated import run_full_pipeline
 from nids_app.state.pipeline_state import set_state, can_access
 
+import json
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from .models import Alert
 
+@csrf_exempt
+def receive_alert(request):
+    if request.method == "POST":
+        data = json.loads(request.body)
+
+        Alert.objects.create(
+            ip=data["ip"],
+            attack_type=data["attack_type"],
+            severity=data["severity"]
+        )
+
+        return JsonResponse({"status": "ok"})
+
+    return JsonResponse({"error": "Invalid request"}, status=400)
 # -------------------------------------------------
 # HELPERS
 # -------------------------------------------------
@@ -23,23 +41,40 @@ def get_session_id(request):
         request.session.create()
     return request.session.session_key
 
-
+# def run_script(request, script_path, success_state, success_msg, redirect_to):
+#     try:
+#         result = subprocess.run(
+#             [os.sys.executable, str(script_path)],
+#             capture_output=True,
+#             text=True,
+#             check=True,
+#         )
+#         set_state(request, success_state)
+#         messages.success(request, success_msg)
+#         return result.stdout, True
+#     except subprocess.CalledProcessError as e:
+#         messages.error(request, f"Execution failed:\n{e.stderr}")
+#         return e.stderr, False 
+    
 def run_script(request, script_path, success_state, success_msg, redirect_to):
     try:
+        session_id = get_session_id(request)
+
         result = subprocess.run(
-            [os.sys.executable, str(script_path)],
+            [os.sys.executable, str(script_path), session_id],
             capture_output=True,
             text=True,
             check=True,
         )
+
         set_state(request, success_state)
         messages.success(request, success_msg)
         return result.stdout, True
+
     except subprocess.CalledProcessError as e:
         messages.error(request, f"Execution failed:\n{e.stderr}")
         return e.stderr, False
-
-
+    
 def validate_csv(uploaded_file):
     if not uploaded_file.name.endswith(".csv"):
         raise ValueError("Only CSV files are allowed.")
@@ -197,12 +232,25 @@ def download_hybrid_view(request):
 # AUTOMATED PIPELINE
 # -------------------------------------------------
 
+# @require_POST
+# def run_automated_pipeline(request):
+#     try:
+#         run_full_pipeline()
+#         messages.success(request, "Pipeline executed successfully.")
+#         return redirect("dashboard")
+#     except Exception as e:
+#         messages.error(request, f"Pipeline failed: {e}")
+#         return redirect("upload_dataset")
 @require_POST
 def run_automated_pipeline(request):
     try:
-        run_full_pipeline()
+        session_id = get_session_id(request)
+
+        run_full_pipeline(session_id)
+
         messages.success(request, "Pipeline executed successfully.")
         return redirect("dashboard")
+
     except Exception as e:
         messages.error(request, f"Pipeline failed: {e}")
         return redirect("upload_dataset")
