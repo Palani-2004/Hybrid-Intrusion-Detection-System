@@ -21,18 +21,28 @@ from .models import Alert
 @csrf_exempt
 def receive_alert(request):
     if request.method == "POST":
-        data = json.loads(request.body)
+        try:
+            data = json.loads(request.body.decode("utf-8"))
 
-        Alert.objects.create(
-            ip=data["ip"],
-            attack_type=data["attack_type"],
-            severity=data["severity"]
-        )
+            ip = data.get("ip")
+            attack_type = data.get("attack_type")
+            severity = data.get("severity")
 
-        return JsonResponse({"status": "ok"})
+            if not ip or not attack_type or not severity:
+                return JsonResponse({"error": "Missing fields"}, status=400)
 
-    return JsonResponse({"error": "Invalid request"}, status=400)
-# -------------------------------------------------
+            Alert.objects.create(
+                ip=ip,
+                attack_type=attack_type,
+                severity=severity
+            )
+
+            return JsonResponse({"status": "ok"})
+
+        except Exception as e:
+            return JsonResponse({"error": str(e)}, status=500)
+
+    return JsonResponse({"error": "Invalid request"}, status=400)# -------------------------------------------------
 # HELPERS
 # -------------------------------------------------
 
