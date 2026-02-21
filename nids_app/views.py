@@ -17,6 +17,27 @@ import json
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from .models import Alert
+# @csrf_exempt
+# def receive_alert(request):
+#     print("METHOD:", request.method)
+
+#     if request.method == "POST":
+#         try:
+#             data = json.loads(request.body.decode("utf-8"))
+#             print("DATA:", data)
+
+#             Alert.objects.create(
+#                 ip=data.get("ip"),
+#                 attack_type=data.get("attack_type"),
+#                 severity=data.get("severity"),
+#             )
+
+#             return JsonResponse({"status": "ok"})
+
+#         except Exception as e:
+#             return JsonResponse({"error": str(e)}, status=500)
+
+#     return JsonResponse({"error": "Invalid request"})# -------------------------------------------------
 @csrf_exempt
 def receive_alert(request):
     print("METHOD:", request.method)
@@ -37,7 +58,7 @@ def receive_alert(request):
         except Exception as e:
             return JsonResponse({"error": str(e)}, status=500)
 
-    return JsonResponse({"error": "Invalid request"})# -------------------------------------------------
+    return JsonResponse({"error": "Invalid request"})
 
 def get_session_id(request):
     if not request.session.session_key:
