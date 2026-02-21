@@ -15,35 +15,50 @@ from nids_app.state.pipeline_state import set_state, can_access
 
 import json
 import traceback
+
+# from django.http import JsonResponse
+# from django.views.decorators.csrf import csrf_exempt
+# from .models import Alert
+
+# @csrf_exempt
+# def receive_alert(request):
+#     try:
+#         if request.method != "POST":
+#             return JsonResponse({"error": f"Method was {request.method}"}, status=400)
+
+#         data = json.loads(request.body.decode("utf-8"))
+
+#         ip = data.get("ip")
+#         attack_type = data.get("attack_type")
+#         severity = data.get("severity")
+
+#         Alert.objects.create(
+#             ip=ip,
+#             attack_type=attack_type,
+#             severity=severity
+#         )
+
+#         return JsonResponse({"status": "ok"})
+
+        # return JsonResponse({
+        #     "error": str(e),
+        #     "trace": traceback.format_exc()
+        # }, status=500)
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from .models import Alert
+import json
 
 @csrf_exempt
 def receive_alert(request):
-    try:
-        if request.method != "POST":
-            return JsonResponse({"error": f"Method was {request.method}"}, status=400)
+    if request.method == "POST":
+        try:
+            data = json.loads(request.body.decode("utf-8"))
+            print("RECEIVED DATA:", data)
+            return JsonResponse({"status": "ok"})
+        except Exception as e:
+            return JsonResponse({"error": str(e)}, status=500)
 
-        data = json.loads(request.body.decode("utf-8"))
-
-        ip = data.get("ip")
-        attack_type = data.get("attack_type")
-        severity = data.get("severity")
-
-        Alert.objects.create(
-            ip=ip,
-            attack_type=attack_type,
-            severity=severity
-        )
-
-        return JsonResponse({"status": "ok"})
-
-    except Exception as e:
-        return JsonResponse({
-            "error": str(e),
-            "trace": traceback.format_exc()
-        }, status=500)
+    return JsonResponse({"error": "Invalid request"}, status=400)
     
 def get_session_id(request):
     if not request.session.session_key:
