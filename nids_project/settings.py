@@ -33,7 +33,7 @@ FILE_UPLOAD_TEMP_DIR = str(PROJECT_TMP)
 SECRET_KEY = 'django-insecure-ek*_eojd#-vj)yb(swhbls@d!3l8045%au2cosrdn2)v4xq89='
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
 ALLOWED_HOSTS = ['.onrender.com', '127.0.0.1', 'localhost']
 
