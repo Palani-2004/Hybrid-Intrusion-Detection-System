@@ -74,10 +74,33 @@
 
 </div>
 
+<!-- ===================== LIVE ALERTS SECTION ===================== -->
+
+<hr style="margin:40px 0;">
+
+<h2>🔴 Live Intrusion Alerts (Real-Time)</h2>
+
+<table border="1" width="100%" id="live-alerts">
+    <thead>
+        <tr>
+            <th>IP</th>
+            <th>Attack Type</th>
+            <th>Severity</th>
+            <th>Timestamp</th>
+        </tr>
+    </thead>
+    <tbody></tbody>
+</table>
+
+<!-- ===================== DEMO DONUT SCRIPT ===================== -->
+
 <script>
 fetch("/api/dashboard-data/")
 .then(res => res.json())
 .then(data => {
+
+    // If demo data not present, skip donut rendering
+    if (!data.benign) return;
 
     const ctx = document.getElementById("idsDonut").getContext("2d");
     let state = "overview";
@@ -86,7 +109,7 @@ fetch("/api/dashboard-data/")
     const benign = data.benign;
     const malicious = data.malicious;
 
-    const attackColors = data.attacks.map((_, i) =>
+    const attackColors = (data.attacks || []).map((_, i) =>
         ["#ff4d4d", "#ffa500", "#1abc9c", "#9b59b6", "#3498db"][i % 5]
     );
 
@@ -103,16 +126,15 @@ fetch("/api/dashboard-data/")
         options: {
             responsive: true,
             cutout: "65%",
-            animation: { animateRotate: true, duration: 700 },
             plugins: { legend: { display: false } },
             onClick(evt, elements) {
                 if (!elements.length) return;
 
                 const idx = elements[0].index;
 
-                if (state === "overview" && idx === 1) {
+                if (state === "overview" && idx === 1 && data.attacks) {
                     drillDown();
-                } else if (state === "drilldown") {
+                } else if (state === "drilldown" && data.attacks) {
                     showAttack(data.attacks[idx]);
                 }
             }
@@ -144,78 +166,45 @@ fetch("/api/dashboard-data/")
         `;
     };
 
-    function confidenceColor(pct) {
-        if (pct >= 80) return "#f85149";
-        if (pct >= 60) return "#f1c40f";
-        return "#2ea043";
-    }
-    <h2>Live Intrusion Alerts</h2>
-<table border="1" id="alerts-table">
-    <thead>
-        <tr>
-            <th>IP</th>
-            <th>Attack Type</th>
-            <th>Severity</th>
-            <th>Time</th>
-        </tr>
-    </thead>
-    <tbody></tbody>
-</table>
-
-<script>
-fetch("/api/dashboard-data/")
-    .then(response => response.json())
-    .then(data => {
-        const tableBody = document.querySelector("#alerts-table tbody");
-        data.alerts.forEach(alert => {
-            const row = `<tr>
-                <td>${alert.ip}</td>
-                <td>${alert.attack_type}</td>
-                <td>${alert.severity}</td>
-                <td>${alert.timestamp}</td>
-            </tr>`;
-            tableBody.innerHTML += row;
-        });
-    });
-</script>
-
     function showAttack(attack) {
         const box = document.getElementById("attackDetails");
-
         box.innerHTML = `
             <h3>🚨 Intrusion Detected: ${attack.name}</h3>
             <p><strong>Severity:</strong> ${attack.severity}</p>
-
-            <h4>Machine Learning Confidence</h4>
-            <div class="confidence-bar">
-                <div class="confidence-fill"
-                     style="width:${attack.confidence}%;
-                            background:${confidenceColor(attack.confidence)};">
-                    ${attack.confidence}%
-                </div>
-            </div>
-
-            <h4>Description</h4>
-            <p>${attack.details.description}</p>
-
-            <h4>Detection Evidence</h4>
-            <ul>${attack.details.evidence.map(e => `<li>${e}</li>`).join("")}</ul>
-
-            <h4>Root Cause</h4>
-            <p>${attack.details.root_cause}</p>
-
-            <h4>Impact</h4>
-            <ul>${attack.details.impact.map(i => `<li>${i}</li>`).join("")}</ul>
-
-            <h4>Mitigation</h4>
-            <ul>${attack.details.mitigation.map(m => `<li>${m}</li>`).join("")}</ul>
-
-            <h4>Final Verdict</h4>
-            <p><strong>${attack.details.final_verdict}</strong></p>
         `;
     }
 
 });
+</script>
+
+<!-- ===================== LIVE ALERT SCRIPT ===================== -->
+
+<script>
+function loadLiveAlerts() {
+    fetch("/api/dashboard-data/")
+        .then(response => response.json())
+        .then(data => {
+            if (!data.alerts) return;
+
+            const tableBody = document.querySelector("#live-alerts tbody");
+            tableBody.innerHTML = "";
+
+            data.alerts.forEach(alert => {
+                const row = `
+                    <tr>
+                        <td>${alert.ip}</td>
+                        <td>${alert.attack_type}</td>
+                        <td>${alert.severity}</td>
+                        <td>${alert.timestamp}</td>
+                    </tr>
+                `;
+                tableBody.innerHTML += row;
+            });
+        });
+}
+
+loadLiveAlerts();
+setInterval(loadLiveAlerts, 3000);
 </script>
 
 {% endblock %}
