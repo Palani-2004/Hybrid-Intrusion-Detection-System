@@ -149,6 +149,35 @@ fetch("/api/dashboard-data/")
         if (pct >= 60) return "#f1c40f";
         return "#2ea043";
     }
+    <h2>Live Intrusion Alerts</h2>
+<table border="1" id="alerts-table">
+    <thead>
+        <tr>
+            <th>IP</th>
+            <th>Attack Type</th>
+            <th>Severity</th>
+            <th>Time</th>
+        </tr>
+    </thead>
+    <tbody></tbody>
+</table>
+
+<script>
+fetch("/api/dashboard-data/")
+    .then(response => response.json())
+    .then(data => {
+        const tableBody = document.querySelector("#alerts-table tbody");
+        data.alerts.forEach(alert => {
+            const row = `<tr>
+                <td>${alert.ip}</td>
+                <td>${alert.attack_type}</td>
+                <td>${alert.severity}</td>
+                <td>${alert.timestamp}</td>
+            </tr>`;
+            tableBody.innerHTML += row;
+        });
+    });
+</script>
 
     function showAttack(attack) {
         const box = document.getElementById("attackDetails");

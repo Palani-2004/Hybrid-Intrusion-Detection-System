@@ -287,17 +287,19 @@ def run_automated_pipeline(request):
 def dashboard_view(request):
     return render(request, "nids_app/dashboard.html")
 
-
 def dashboard_data_api(request):
-    session_id = get_session_id(request)
+    alerts = Alert.objects.order_by("-timestamp")[:50]
 
-    file_path = (
-        Path(settings.BASE_DIR)
-        / "data"
-        / "processed"
-        / session_id
-        / "hybrid_output.csv"
-    )
+    data = []
+    for alert in alerts:
+        data.append({
+            "ip": alert.ip,
+            "attack_type": alert.attack_type,
+            "severity": alert.severity,
+            "timestamp": alert.timestamp.strftime("%Y-%m-%d %H:%M:%S")
+        })
+
+    return JsonResponse({"alerts": data})
 
     # -------------------------------------------------
     # ✅ DEMO / FALLBACK MODE (CRITICAL FIX)

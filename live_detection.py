@@ -15,7 +15,7 @@ flow_data = defaultdict(lambda: {
     "start_time": time.time()
 })
 
-CLOUD_API = "https://hybrid-intrusion-detection-system-2.onrender.com/api/alert/"   # CHANGE THIS
+CLOUD_API = "https://hybrid-intrusion-detection-system.onrender.com/api/alert/"
 
 def extract_features(flow):
     duration = time.time() - flow["start_time"]
