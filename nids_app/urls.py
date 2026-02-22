@@ -41,11 +41,14 @@ urlpatterns = [
     # -------------------------------------------------
     # DASHBOARD DATA API
     # -------------------------------------------------
-    path(
-        "api/dashboard-data/",
-        views.dashboard_data_api,
-        name="dashboard_data_api",
+    # path(
+    #     "api/dashboard-data/",
+    #     views.dashboard_data_api,
+    #     name="dashboard_data_api",
+       
 
         
-    ),
+    # ),
+    path("api/dashboard-data/", views.dashboard_data_api, name="dashboard_data"),
+    path("dashboard/", views.dashboard_view, name="dashboard"),
 ]

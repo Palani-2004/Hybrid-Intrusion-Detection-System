@@ -287,16 +287,18 @@ def run_automated_pipeline(request):
 def dashboard_view(request):
     return render(request, "nids_app/dashboard.html")
 
-# -------------------------------------------------
-# DASHBOARD DATA API (CLEAN VERSION)
-# -------------------------------------------------
-
-from .attack_knowledge import ATTACK_KNOWLEDGE
-from .models import Alert
 from django.http import JsonResponse
 from pathlib import Path
-from django.conf import settings
 import pandas as pd
+from django.conf import settings
+from .models import Alert
+from .attack_knowledge import ATTACK_KNOWLEDGE
+
+ATTACK_NAME_MAPPING = {
+    "BruteForce": "SSH-BruteForce",
+    "DoS": "DoS-SYN-Flood",
+    "BENIGN": "Benign",
+}
 
 
 def dashboard_data_api(request):
@@ -310,9 +312,9 @@ def dashboard_data_api(request):
         / "hybrid_output.csv"
     )
 
-    # ------------------------------------------
-    # FETCH ALERTS (always returned)
-    # ------------------------------------------
+    # -----------------------------
+    # Fetch Alerts
+    # -----------------------------
     alerts = Alert.objects.order_by("-timestamp")[:50]
     alerts_data = [
         {
@@ -324,94 +326,86 @@ def dashboard_data_api(request):
         for a in alerts
     ]
 
-    # ==========================================
-    # DEMO MODE (Render fallback)
-    # ==========================================
+    # -----------------------------
+    # If file does not exist → demo
+    # -----------------------------
     if not file_path.exists():
-
-        demo_attacks = ["Port-Scanning", "SSH-BruteForce"]
-
-        attack_data = []
-
-        for attack_name in demo_attacks:
-            knowledge = ATTACK_KNOWLEDGE.get(attack_name)
-
-            if knowledge:
-                attack_data.append({
-                    "name": attack_name,
+        return JsonResponse({
+            "benign": 3,
+            "malicious": 2,
+            "attacks": [
+                {
+                    "name": "SSH-BruteForce",
                     "count": 1,
-                    "severity": knowledge["severity"],
+                    "severity": "High",
                     "confidence": 85,
-                    "details": knowledge
-                })
+                    "details": ATTACK_KNOWLEDGE["SSH-BruteForce"],
+                }
+            ],
+            "alerts": alerts_data
+        })
 
-        def dashboard_data_api(request):
-         return JsonResponse({
-        "demo": True,
-        "benign": 3,
-        "malicious": 2,
-        "attacks": [
-            {
-                "name": "Port-Scanning",
-                "count": 1,
-                "severity": "Medium",
-                "confidence": 72,
-                "details": ATTACK_KNOWLEDGE["Port-Scanning"],
-            },
-            {
-                "name": "SSH-BruteForce",
-                "count": 1,
-                "severity": "High",
-                "confidence": 89,
-                "details": ATTACK_KNOWLEDGE["SSH-BruteForce"],
-            },
-        ],
-        "alerts": [],
-    })
-
-    # ==========================================
-    # REAL DATA MODE (CSV exists)
-    # ==========================================
+    # -----------------------------
+    # Real data mode
+    # -----------------------------
     try:
         df = pd.read_csv(file_path)
     except Exception:
-        return JsonResponse({"error": "Invalid CSV file"}, status=400)
+        # If CSV fails → fallback demo
+        return JsonResponse({
+            "benign": 3,
+            "malicious": 2,
+            "attacks": [],
+            "alerts": alerts_data
+        })
 
-    required_cols = {
-        "pred_label",
-        "Attack Type",
-        "ml_probability",
-        "signature_flag",
-    }
+    # Use Final Decision column (YOUR CSV HAS THIS)
+    if "Final Decision" not in df.columns:
+        return JsonResponse({
+            "benign": 3,
+            "malicious": 2,
+            "attacks": [],
+            "alerts": alerts_data
+        })
 
-    if not required_cols.issubset(df.columns):
-        return JsonResponse({"error": "Missing required columns"}, status=400)
-
-    total = len(df)
-    malicious_df = df[df["pred_label"] == "Malicious"]
-    benign = total - len(malicious_df)
+    benign = (df["Final Decision"] == "Benign").sum()
+    malicious_df = df[df["Final Decision"] == "Malicious"]
 
     attacks = []
 
-    for attack, group in malicious_df.groupby("Attack Type"):
-        meta = ATTACK_KNOWLEDGE.get(
-            attack,
-            ATTACK_KNOWLEDGE["Benign"]
-        )
+    if "Attack Type" in df.columns:
+        for attack, group in malicious_df.groupby("Attack Type"):
+            mapped_name = ATTACK_NAME_MAPPING.get(attack, attack)
 
-        attacks.append({
-            "name": attack,
-            "count": int(len(group)),
-            "severity": meta["severity"],
-            "confidence": round(group["ml_probability"].mean() * 100, 2),
-            "details": meta,
-        })
+            meta = ATTACK_KNOWLEDGE.get(
+    mapped_name,
+    {
+        "severity": "Medium",
+        "description": "Attack detected by Hybrid IDS.",
+        "evidence": [],
+        "root_cause": "",
+        "impact": [],
+        "mitigation": [],
+        "final_verdict": "Malicious",
+    },
+)
+
+            attacks.append(
+                {
+                    "name": attack,
+                    "count": int(len(group)),
+                    "severity": meta["severity"],
+                    "confidence": round(group["ml_probability"].mean() * 100, 2)
+                    if "ml_probability" in group.columns
+                    else 75,
+                    "details": meta,
+                }
+            )
 
     return JsonResponse({
-        "demo": False,
-        "total": total,
-        "benign": benign,
-        "malicious": len(malicious_df),
+        "benign": int(benign),
+        "malicious": int(len(malicious_df)),
         "attacks": attacks,
         "alerts": alerts_data
     })
+    

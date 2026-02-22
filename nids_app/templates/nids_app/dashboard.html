@@ -167,12 +167,44 @@ fetch("/api/dashboard-data/")
     };
 
     function showAttack(attack) {
-        const box = document.getElementById("attackDetails");
-        box.innerHTML = `
-            <h3>🚨 Intrusion Detected: ${attack.name}</h3>
-            <p><strong>Severity:</strong> ${attack.severity}</p>
-        `;
+
+    const box = document.getElementById("attackDetails");
+
+    if (!attack || !attack.details) {
+        box.innerHTML = "<p>No attack details available.</p>";
+        return;
     }
+
+    box.innerHTML = `
+        <h3>🚨 Intrusion Detected: ${attack.name}</h3>
+        <p><strong>Severity:</strong> ${attack.severity}</p>
+        <p><strong>Confidence:</strong> ${attack.confidence}%</p>
+
+        <h4>Description</h4>
+        <p>${attack.details.description}</p>
+
+        <h4>Evidence</h4>
+        <ul>
+            ${attack.details.evidence.map(e => `<li>${e}</li>`).join("")}
+        </ul>
+
+        <h4>Root Cause</h4>
+        <p>${attack.details.root_cause}</p>
+
+        <h4>Impact</h4>
+        <ul>
+            ${attack.details.impact.map(i => `<li>${i}</li>`).join("")}
+        </ul>
+
+        <h4>Mitigation</h4>
+        <ul>
+            ${attack.details.mitigation.map(m => `<li>${m}</li>`).join("")}
+        </ul>
+
+        <h4>Final Verdict</h4>
+        <p>${attack.details.final_verdict}</p>
+    `;
+}
 
 });
 </script>
