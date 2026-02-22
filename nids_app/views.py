@@ -7,6 +7,7 @@ from django.conf import settings
 from django.contrib import messages
 from django.http import FileResponse, Http404, JsonResponse
 from django.shortcuts import redirect, render
+from .models import Alert
 from django.views.decorators.http import require_POST
 
 from .attack_knowledge import ATTACK_KNOWLEDGE
