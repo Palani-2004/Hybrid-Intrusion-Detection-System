@@ -282,6 +282,12 @@ def run_automated_pipeline(request):
 
 
 # -------------------------------------------------
+# DASHBOARD PAGE VIEW
+# -------------------------------------------------
+def dashboard_view(request):
+    return render(request, "nids_app/dashboard.html")
+
+# -------------------------------------------------
 # DASHBOARD DATA API (CLEAN VERSION)
 # -------------------------------------------------
 
@@ -339,14 +345,29 @@ def dashboard_data_api(request):
                     "details": knowledge
                 })
 
-        return JsonResponse({
-            "demo": True,
-            "total": 5,
-            "benign": 3,
-            "malicious": len(demo_attacks),
-            "attacks": attack_data,
-            "alerts": alerts_data
-        })
+        def dashboard_data_api(request):
+         return JsonResponse({
+        "demo": True,
+        "benign": 3,
+        "malicious": 2,
+        "attacks": [
+            {
+                "name": "Port-Scanning",
+                "count": 1,
+                "severity": "Medium",
+                "confidence": 72,
+                "details": ATTACK_KNOWLEDGE["Port-Scanning"],
+            },
+            {
+                "name": "SSH-BruteForce",
+                "count": 1,
+                "severity": "High",
+                "confidence": 89,
+                "details": ATTACK_KNOWLEDGE["SSH-BruteForce"],
+            },
+        ],
+        "alerts": [],
+    })
 
     # ==========================================
     # REAL DATA MODE (CSV exists)
