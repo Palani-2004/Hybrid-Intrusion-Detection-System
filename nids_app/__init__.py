@@ -1,0 +1,1 @@
+default_app_config = 'nids_app.apps.NidsAppConfig'
