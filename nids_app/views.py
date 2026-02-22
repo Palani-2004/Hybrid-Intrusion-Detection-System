@@ -282,11 +282,16 @@ def run_automated_pipeline(request):
 
 
 # -------------------------------------------------
-# DASHBOARD
+# DASHBOARD DATA API (CLEAN VERSION)
 # -------------------------------------------------
 
-def dashboard_view(request):
-    return render(request, "nids_app/dashboard.html")
+from .attack_knowledge import ATTACK_KNOWLEDGE
+from .models import Alert
+from django.http import JsonResponse
+from pathlib import Path
+from django.conf import settings
+import pandas as pd
+
 
 def dashboard_data_api(request):
     session_id = get_session_id(request)
@@ -299,7 +304,9 @@ def dashboard_data_api(request):
         / "hybrid_output.csv"
     )
 
-    # ---------- FETCH ALERTS ----------
+    # ------------------------------------------
+    # FETCH ALERTS (always returned)
+    # ------------------------------------------
     alerts = Alert.objects.order_by("-timestamp")[:50]
     alerts_data = [
         {
@@ -311,89 +318,39 @@ def dashboard_data_api(request):
         for a in alerts
     ]
 
-    # ---------- IF FILE DOES NOT EXIST (Render case) ----------
+    # ==========================================
+    # DEMO MODE (Render fallback)
+    # ==========================================
     if not file_path.exists():
+
+        demo_attacks = ["Port-Scanning", "SSH-BruteForce"]
+
+        attack_data = []
+
+        for attack_name in demo_attacks:
+            knowledge = ATTACK_KNOWLEDGE.get(attack_name)
+
+            if knowledge:
+                attack_data.append({
+                    "name": attack_name,
+                    "count": 1,
+                    "severity": knowledge["severity"],
+                    "confidence": 85,
+                    "details": knowledge
+                })
+
         return JsonResponse({
+            "demo": True,
+            "total": 5,
             "benign": 3,
-            "malicious": 2,
-            "attacks": [
-                {
-                    "name": "Port-Scanning",
-                    "count": 1,
-                    "severity": "Medium",
-                    "confidence": 72,
-                    "details": {
-                        "description": "Port scanning activity detected.",
-                        "evidence": ["Sequential port attempts"],
-                        "root_cause": "Open ports",
-                        "impact": ["Reconnaissance"],
-                        "mitigation": ["Firewall rules"],
-                        "final_verdict": "Suspicious"
-                    }
-                },
-                {
-                    "name": "SSH-BruteForce",
-                    "count": 1,
-                    "severity": "High",
-                    "confidence": 89,
-                    "details": {
-                        "description": "Multiple failed SSH login attempts.",
-                        "evidence": ["Repeated login attempts"],
-                        "root_cause": "Weak credentials",
-                        "impact": ["Unauthorized access"],
-                        "mitigation": ["Disable password login"],
-                        "final_verdict": "Malicious"
-                    }
-                }
-            ],
+            "malicious": len(demo_attacks),
+            "attacks": attack_data,
             "alerts": alerts_data
         })
 
-    # ---------- NORMAL FILE LOGIC ----------
-    df = pd.read_csv(file_path)
-
-    benign = (df["prediction"] == "BENIGN").sum()
-    malicious = (df["prediction"] != "BENIGN").sum()
-
-    return JsonResponse({
-        "benign": int(benign),
-        "malicious": int(malicious),
-        "attacks": [],
-        "alerts": alerts_data
-    })
-
-    # -------------------------------------------------
-    # ✅ DEMO / FALLBACK MODE (CRITICAL FIX)
-    # -------------------------------------------------
-    if not file_path.exists():
-        return JsonResponse(
-            {
-                "demo": True,
-                "total": 5,
-                "benign": 3,
-                "malicious": 2,
-                "attacks": [
-                    {
-                        "name": "Port-Scanning",
-                        "count": 1,
-                        "severity": "Medium",
-                        "confidence": 72,
-                        "details": ATTACK_KNOWLEDGE["Port-Scanning"],
-                    },
-                    {
-                        "name": "SSH-BruteForce",
-                        "count": 1,
-                        "severity": "High",
-                        "confidence": 89,
-                        "details": ATTACK_KNOWLEDGE["SSH-BruteForce"],
-                    },
-                ],
-            }
-        )
-
-    # -------------------------------------------------
-    # REAL DATA PATH
-    # -------------------------------------------------
+    # ==========================================
+    # REAL DATA MODE (CSV exists)
+    # ==========================================
     try:
         df = pd.read_csv(file_path)
     except Exception:
@@ -414,36 +371,26 @@ def dashboard_data_api(request):
     benign = total - len(malicious_df)
 
     attacks = []
+
     for attack, group in malicious_df.groupby("Attack Type"):
         meta = ATTACK_KNOWLEDGE.get(
             attack,
-            {
-                "severity": "Medium",
-                "description": "Attack detected by Hybrid IDS.",
-                "evidence": [],
-                "root_cause": "",
-                "impact": [],
-                "mitigation": [],
-                "final_verdict": "Malicious",
-            },
+            ATTACK_KNOWLEDGE["Benign"]
         )
 
-        attacks.append(
-            {
-                "name": attack,
-                "count": int(len(group)),
-                "severity": meta["severity"],
-                "confidence": round(group["ml_probability"].mean() * 100, 2),
-                "details": meta,
-            }
-        )
+        attacks.append({
+            "name": attack,
+            "count": int(len(group)),
+            "severity": meta["severity"],
+            "confidence": round(group["ml_probability"].mean() * 100, 2),
+            "details": meta,
+        })
 
-    return JsonResponse(
-        {
-            "demo": False,
-            "total": total,
-            "benign": benign,
-            "malicious": len(malicious_df),
-            "attacks": attacks,
-        }
-    )
+    return JsonResponse({
+        "demo": False,
+        "total": total,
+        "benign": benign,
+        "malicious": len(malicious_df),
+        "attacks": attacks,
+        "alerts": alerts_data
+    })
