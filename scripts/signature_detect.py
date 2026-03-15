@@ -49,10 +49,15 @@ SIG_WEIGHT = 0.4
 # --------------------------------------------------
 SEVERITY_MAP = {
     "PortScan": 0.3,
-    "FTP-BruteForce": 0.6,
-    "BruteForce": 0.6,
+    "Port-Scanning": 0.3,
+    "FTP-BruteForce": 0.8,
+    "SSH-BruteForce": 0.9,
+    "BruteForce": 0.7,
     "DoS": 1.0,
     "DDoS": 1.0,
+    "SQL-Injection": 1.0,
+    "XSS": 0.8,
+    "Credential-Stuffing": 0.9,
 }
 
 def severity_score(attack: str) -> float:
@@ -196,6 +201,8 @@ def hybrid_detection(df: pd.DataFrame, sigs: List[str]) -> pd.DataFrame:
     df["final_risk_score"] = risk_scores
     df["hybrid_reason"] = hybrid_reasons
     df["Final Decision"] = final_decisions
+    # Ensure dashboard-compatible label
+    df["pred_label"] = df["Final Decision"]
 
     return df
 

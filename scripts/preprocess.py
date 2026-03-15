@@ -53,6 +53,9 @@ def main():
         print(e)
         sys.exit(1)
 
+    df.replace([float("inf"), float("-inf")], 0, inplace=True)
+    df.fillna(0, inplace=True)
+
 
 if __name__ == "__main__":
     main()

@@ -1,191 +1,322 @@
 <!doctype html>
 <html lang="en">
 <head>
-    {% load static %}
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+{% load static %}
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 
-    <title>{% block title %}Hybrid IDS{% endblock %} — NIDS</title>
+<title>{% block title %}Hybrid IDS{% endblock %} — NIDS</title>
 
-    <!-- Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-    <!-- Home / Hero CSS -->
-    <link rel="stylesheet" href="{% static 'css/home.css' %}">
+<link rel="stylesheet" href="{% static 'css/home.css' %}">
 
-    <style>
-        :root {
-            --bg: #0f1724;
-            --card: #0b1220;
-            --muted: #94a3b8;
-            --accent: #0ea5e9;
-            --danger: #ef4444;
-            --success: #10b981;
-            color-scheme: dark;
-        }
+<style>
 
-        body {
-            font-family: Inter, system-ui, Segoe UI, Arial, sans-serif;
-            margin: 0;
-            background: #071023;
-            color: #e6eef6;
-        }
+:root{
+--primary:#4DA6FF;
+--secondary:#E8F4FF;
+--accent:#1E88E5;
+--text:#0f172a;
+--glass:rgba(77,166,255,0.15);
+}
 
-        header {
-            background: linear-gradient(90deg, #071023 0%, #0b2540 100%);
-            padding: 16px;
-        }
+/* BODY */
 
-        .container {
-            max-width: 1100px;
-            margin: 0 auto;
-            padding: 20px;
-        }
+body{
 
-        a {
-            color: inherit;
-            text-decoration: none;
-        }
+font-family:Inter,system-ui,Segoe UI,Arial,sans-serif;
+margin:0;
+color:var(--text);
 
-        nav a {
-            margin-right: 10px;
-            color: #cfe9ff;
-        }
+background:
+linear-gradient(-45deg,rgba(234,246,255,0.85),rgba(255,255,255,0.9),rgba(217,241,255,0.85),rgba(255,255,255,0.9)),
+url("/static/images/network_wave2.jpg");
 
-        .card {
-            background: linear-gradient(
-                180deg,
-                rgba(255, 255, 255, 0.02),
-                rgba(255, 255, 255, 0.01)
-            );
-            position: relative;
-            padding: 18px;
-            border-radius: 12px;
-            box-shadow: 0 6px 18px rgba(2, 6, 23, 0.6);
-        }
+background-size:400% 400%, cover;
+background-position:center;
+background-attachment:fixed;
 
-        .btn {
-            display: inline-block;
-            padding: 10px 18px;
-            border-radius: 10px;
-            background: linear-gradient(135deg, #00c6ff, #0072ff);
-            color: #000;
-            font-weight: 600;
-            border: none;
-            cursor: pointer;
-            transition: transform 0.15s ease, box-shadow 0.15s ease;
-        }
+animation:skyGradient 18s ease infinite;
 
-        .btn:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 6px 18px rgba(0, 114, 255, 0.35);
-        }
+}
 
-        .btn-next {
-            transform: scale(0.8);
-            position: absolute;
-            bottom: 20px;
-            right: 20px;
-            opacity: 0.9;
-        }
+@keyframes skyGradient{
 
-        .btn-next:hover {
-            opacity: 1;
-        }
+0%{background-position:0% 50%;}
+50%{background-position:100% 50%;}
+100%{background-position:0% 50%;}
 
-        .muted {
-            color: var(--muted);
-            font-size: 0.95rem;
-        }
+}
 
-        .success { color: var(--success); }
-        .danger  { color: var(--danger); }
+/* HEADER */
 
-        .severity {
-            color: var(--danger);
-            font-weight: bold;
-        }
+header{
 
-        pre.log {
-            background: #021024;
-            padding: 12px;
-            border-radius: 8px;
-            color: #cbeefe;
-            overflow: auto;
-            max-height: 240px;
-        }
+backdrop-filter:blur(14px);
+-webkit-backdrop-filter:blur(14px);
 
-        form.row {
-            display: flex;
-            gap: 8px;
-            align-items: center;
-            flex-wrap: wrap;
-        }
+background:rgba(77,166,255,0.12);
 
-        th.left, td.left { text-align: left; }
-        th.right, td.right { text-align: right; }
-    </style>
+border-bottom:1px solid rgba(77,166,255,0.25);
 
-    <!-- Utility JavaScript -->
-    <script>
-        function typeWriter(elementId, text, speed = 30) {
-            const el = document.getElementById(elementId);
-            if (!el) return;
+box-shadow:0 8px 25px rgba(0,0,0,0.06);
 
-            el.textContent = "";
-            let i = 0;
+position:sticky;
+top:0;
+z-index:100;
 
-            function typing() {
-                if (i < text.length) {
-                    el.textContent += text.charAt(i);
-                    i++;
-                    setTimeout(typing, speed);
-                }
-            }
-            typing();
-        }
-    </script>
+}
+
+/* CONTAINER */
+
+.container{
+max-width:1200px;
+margin:auto;
+padding:18px;
+}
+
+/* NAVIGATION */
+
+nav{
+display:flex;
+gap:10px;
+align-items:center;
+flex-wrap:wrap;
+}
+
+nav a{
+padding:8px 14px;
+border-radius:10px;
+background:rgba(255,255,255,0.6);
+font-weight:500;
+transition:0.25s;
+}
+
+nav a:hover{
+
+background:var(--primary);
+color:white;
+transform:translateY(-2px);
+box-shadow:0 6px 14px rgba(0,0,0,0.15);
+
+}
+
+/* CARD */
+
+.card{
+
+background:white;
+padding:22px;
+border-radius:16px;
+box-shadow:0 12px 35px rgba(0,0,0,0.08);
+transition:0.3s;
+
+}
+
+.card:hover{
+transform:translateY(-4px);
+}
+
+/* BUTTON */
+
+.btn{
+
+display:inline-block;
+padding:10px 18px;
+border-radius:10px;
+background:linear-gradient(135deg,#4DA6FF,#1E88E5);
+color:white;
+font-weight:600;
+border:none;
+cursor:pointer;
+transition:0.25s;
+
+}
+
+.btn:hover{
+
+transform:translateY(-2px);
+box-shadow:0 8px 20px rgba(0,0,0,0.2);
+
+}
+
+.btn-next{
+
+position:absolute;
+bottom:20px;
+right:20px;
+transform:scale(0.85);
+
+}
+
+/* TEXT */
+
+.muted{
+color:#64748b;
+font-size:0.95rem;
+}
+
+.success{color:#10b981}
+.danger{color:#ef4444}
+
+/* WAVE BACKGROUND */
+.ocean{
+position:fixed;
+bottom:0;
+left:0;
+width:100%;
+height:120px;
+overflow:hidden;
+z-index:-1;
+}
+
+.wave{
+position:fixed;
+bottom:0;
+left:0;
+width:100%;
+opacity:0.45;
+pointer-events:none;
+}
+
+.wave path{
+animation:waveFloat 4s ease-in-out infinite;
+}
+
+@keyframes waveFloat{
+
+0%{
+transform:translateY(0);
+}
+
+50%{
+transform:translateY(-12px);
+}
+
+100%{
+transform:translateY(0);
+}
+
+}
+
+/* FOOTER */
+
+footer{
+margin-top:60px;
+padding:25px;
+text-align:center;
+color:#64748b;
+}
+
+</style>
+
+<script>
+
+function typeWriter(elementId,text,speed=30){
+
+const el=document.getElementById(elementId);
+if(!el) return;
+
+el.textContent="";
+let i=0;
+
+function typing(){
+
+if(i<text.length){
+
+el.textContent+=text.charAt(i);
+i++;
+setTimeout(typing,speed);
+
+}
+
+}
+
+typing();
+
+}
+
+</script>
+
 </head>
 
 <body>
 
 <header>
-    <div class="container"
-         style="display:flex;align-items:center;justify-content:space-between">
 
-        <div>
-            <h1 style="margin:0">
-                Hybrid Intrusion Detection
-                <span style="color:var(--accent)">System</span>
-            </h1>
-            <div class="muted">
-                Ensemble ML + Signature-based Detection
-            </div>
-        </div>
+<div class="container" style="display:flex;align-items:center;justify-content:space-between">
 
-        <nav>
-            <a href="{% url 'dashboard' %}">Dashboard</a>
-            <a href="{% url 'upload_dataset' %}">Upload</a>
-            <a href="{% url 'train' %}">Train</a>
-            <a href="{% url 'predict' %}">Predict</a>
-            <a href="{% url 'hybrid' %}">Hybrid</a>
-            <a href="/admin/"
-               style="background:var(--accent);
-                      padding:6px 10px;
-                      border-radius:8px;
-                      color:#04202a">
-                Admin
-            </a>
-        </nav>
-    </div>
+<div>
+
+<h2 style="margin:0">
+
+<span style="color:var(--primary)">Hybrid</span>
+Intrusion Detection System
+
+</h2>
+
+<div class="muted">
+
+AI-Driven Network Security Monitoring using Ensemble Learning and Signature based Analysis
+
+</div>
+
+</div>
+
+<nav>
+
+<a href="{% url 'index' %}">Home</a>
+
+<a href="{% url 'upload_dataset' %}">Upload</a>
+
+<a href="{% url 'preprocess' %}">Preprocess</a>
+
+<a href="{% url 'train' %}">Train</a>
+
+<a href="{% url 'predict' %}">Predict</a>
+
+<a href="{% url 'hybrid' %}">Hybrid</a>
+
+<a href="{% url 'dashboard' %}">Dashboard</a>
+
+<a href="/admin/" style="background:var(--primary);color:white;">
+Admin
+</a>
+
+</nav>
+
+</div>
+
 </header>
 
 <main class="container" style="padding-top:26px">
-    {% block content %}{% endblock %}
+{% block content %}{% endblock %}
 </main>
 
-<footer style="padding:24px 0;text-align:center;color:var(--muted)">
-    &copy; {{ now.year }} Hybrid IDS — local demo
+<!-- Animated wave -->
+
+<div class="ocean">
+
+<svg class="wave wave1" viewBox="0 0 1440 320">
+<path fill="#4DA6FF"
+d="M0,224L60,213C120,203,240,181,360,181C480,181,600,203,720,219C840,235,960,245,1080,240C1200,235,1320,213,1440,192L1440,320L0,320Z">
+</path>
+</svg>
+
+<svg class="wave wave2" viewBox="0 0 1440 320">
+<path fill="#4DA6FF" fill-opacity="0.6"
+d="M0,240L80,220C160,200,320,200,480,210C640,220,800,240,960,235C1120,230,1280,210,1440,200L1440,320L0,320Z">
+</path>
+</svg>
+
+</div>
+
+<footer>
+
+© {2026} Hybrid IDS — AI Network Security
+
 </footer>
 
 </body>

@@ -1,8 +1,12 @@
+from cmath import log
 import os
 import sys
 import subprocess
 from pathlib import Path
 from django.conf import settings
+from pkg_resources import run_script
+
+# from nids_project.scripts.hybrid_detect import BASE
 
 
 def run_full_pipeline(session_id, log_callback=None):
@@ -18,7 +22,7 @@ def run_full_pipeline(session_id, log_callback=None):
     PREPROCESS_SCRIPT = SCRIPTS_DIR / "preprocess.py"
     TRAIN_SCRIPT = SCRIPTS_DIR / "train_model.py"
     PREDICT_SCRIPT = SCRIPTS_DIR / "predict.py"
-    HYBRID_SCRIPT = SCRIPTS_DIR / "hybrid_detect.py"
+    HYBRID_SCRIPT = SCRIPTS_DIR / "signature_detect.py"
 
     def log(msg):
         if log_callback:
@@ -42,7 +46,11 @@ def run_full_pipeline(session_id, log_callback=None):
 
         if process.returncode != 0:
             raise RuntimeError(f"{step_name} failed with exit code {process.returncode}")
+        
+    import shutil
 
+    processed_path = BASE / "data" / "processed" / session_id
+    processed_path.mkdir(parents=True, exist_ok=True)
     # -------------------------------------------------
     # 1️⃣ Preprocessing
     # -------------------------------------------------
@@ -51,11 +59,11 @@ def run_full_pipeline(session_id, log_callback=None):
     log("Preprocessing completed successfully.")
 
     # -------------------------------------------------
-    # 2️⃣ Model Training (Skipped intentionally)
+    # 2️⃣ Model Training
     # -------------------------------------------------
     log("▶ Running Model Training...")
-    log("Skipped training (pretrained model used).")
-
+    run_script(TRAIN_SCRIPT, "Model Training")
+    log("Model training completed successfully.")
     # -------------------------------------------------
     # 3️⃣ Prediction
     # -------------------------------------------------

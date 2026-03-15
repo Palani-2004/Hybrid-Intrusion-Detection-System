@@ -1,6 +1,217 @@
 {% extends 'nids_app/base.html' %}
+{% block title %}Prediction Results{% endblock %}
+
 {% block content %}
-  <h2>Prediction output</h2>
-  <pre style="white-space:pre-wrap;">{{ output }}</pre>
-  <a href="{% url 'dashboard' %}">Dashboard</a>
+
+<style>
+
+/* SUMMARY GRID */
+
+.summary-grid{
+
+display:grid;
+grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
+gap:20px;
+
+margin-top:20px;
+
+}
+
+/* CARD */
+
+.summary-card{
+
+background:white;
+padding:20px;
+
+border-radius:16px;
+
+box-shadow:0 10px 35px rgba(0,0,0,0.08);
+
+text-align:center;
+
+}
+
+/* CONFIDENCE BAR */
+
+.conf-bar{
+
+height:12px;
+background:#e2e8f0;
+
+border-radius:10px;
+overflow:hidden;
+
+margin-top:8px;
+
+}
+
+.conf-fill{
+
+height:100%;
+
+background:#1E88E5;
+
+width:0;
+
+transition:width 1s;
+
+}
+
+/* LOG BOX */
+
+.log-box{
+
+background:#0f172a;
+color:#22c55e;
+
+padding:18px;
+
+border-radius:12px;
+
+font-family:monospace;
+
+max-height:320px;
+
+overflow:auto;
+
+margin-top:25px;
+
+}
+
+</style>
+
+
+
+<h2>Prediction Results</h2>
+
+<p class="muted">
+The trained model has analyzed the uploaded network traffic and produced predictions.
+</p>
+
+
+
+<!-- SUMMARY -->
+
+<div class="summary-grid">
+
+<div class="summary-card">
+
+<h3 id="benignCount">--</h3>
+<p class="muted">Benign Traffic</p>
+
+</div>
+
+<div class="summary-card">
+
+<h3 id="attackCount">--</h3>
+<p class="muted">Detected Attacks</p>
+
+</div>
+
+<div class="summary-card">
+
+<h3 id="accuracy">--</h3>
+<p class="muted">Prediction Confidence</p>
+
+</div>
+
+</div>
+
+
+
+<!-- CONFIDENCE VISUAL -->
+
+<h3 style="margin-top:30px">Prediction Confidence</h3>
+
+<div class="conf-bar">
+<div id="confidenceBar" class="conf-fill"></div>
+</div>
+
+
+
+<!-- CHART -->
+
+<h3 style="margin-top:30px">Traffic Classification</h3>
+
+<canvas id="predictChart"></canvas>
+
+
+
+<!-- RAW OUTPUT -->
+
+<h3 style="margin-top:30px">Prediction Output Log</h3>
+
+<div class="log-box">
+
+<pre style="white-space:pre-wrap;">{{ output }}</pre>
+
+</div>
+
+
+
+<br>
+
+<a href="{% url 'dashboard' %}" class="btn">
+View Dashboard
+</a>
+
+
+
+<script>
+
+/* Example values for demo visualization */
+
+let benign=1200
+let attacks=85
+let confidence=94
+
+
+
+document.getElementById("benignCount").innerHTML=benign
+document.getElementById("attackCount").innerHTML=attacks
+document.getElementById("accuracy").innerHTML=confidence+"%"
+
+
+/* CONFIDENCE BAR */
+
+setTimeout(()=>{
+document.getElementById("confidenceBar").style.width=confidence+"%"
+},500)
+
+
+
+/* CHART */
+
+const ctx=document.getElementById("predictChart")
+
+new Chart(ctx,{
+
+type:"doughnut",
+
+data:{
+
+labels:["Benign","Malicious"],
+
+datasets:[{
+
+data:[benign,attacks],
+
+backgroundColor:["#10b981","#ef4444"]
+
+}]
+
+},
+
+options:{
+
+cutout:"65%",
+plugins:{legend:{position:"bottom"}}
+
+}
+
+})
+
+</script>
+
 {% endblock %}

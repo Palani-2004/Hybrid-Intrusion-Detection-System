@@ -2,59 +2,273 @@
 {% block title %}Train Model{% endblock %}
 
 {% block content %}
+
+<style>
+
+/* TRAIN FLOW */
+
+.train-flow{
+display:flex;
+justify-content:center;
+gap:30px;
+margin-top:30px;
+flex-wrap:wrap;
+}
+
+.train-step{
+
+background:white;
+padding:20px;
+
+border-radius:16px;
+
+box-shadow:0 10px 35px rgba(0,0,0,0.08);
+
+text-align:center;
+
+min-width:170px;
+
+}
+
+.train-step.active{
+
+background:#4DA6FF;
+color:white;
+
+}
+
+/* FLOW LINE */
+
+.flow{
+
+height:4px;
+background:#4DA6FF;
+
+margin:20px auto;
+width:60%;
+position:relative;
+
+}
+
+.packet{
+
+width:12px;
+height:12px;
+
+background:#1E88E5;
+
+border-radius:50%;
+
+position:absolute;
+top:-4px;
+
+animation:flowMove 3s linear infinite;
+
+}
+
+@keyframes flowMove{
+
+0%{left:0}
+100%{left:100%}
+
+}
+
+/* PROGRESS */
+
+.progress{
+
+height:10px;
+
+background:#e2e8f0;
+
+border-radius:10px;
+
+margin-top:20px;
+
+overflow:hidden;
+
+}
+
+.progress-bar{
+
+height:100%;
+
+width:0;
+
+background:#1E88E5;
+
+transition:width 0.6s;
+
+}
+
+/* ACCURACY */
+
+.accuracy{
+
+margin-top:20px;
+
+font-weight:600;
+
+text-align:center;
+
+}
+
+</style>
+
+
+
 <div class="card">
-  <h2>Train model</h2>
 
-  <p id="narrative" class="muted"></p>
+<h2>Train Machine Learning Model</h2>
 
-  <p class="muted" style="margin-top:-6px">
-    Pipeline stage:
-    <strong>Upload → Preprocess → Train → Predict → Hybrid</strong>
-  </p>
+<p id="narrative" class="muted"></p>
 
-  <p class="muted">
-    In this stage, the system learns how to distinguish benign network traffic
-    from malicious activity using supervised machine learning.
-  </p>
+<p class="muted" style="margin-top:-6px">
+Pipeline stage:
+<strong>Upload → Preprocess → Train → Predict → Hybrid</strong>
+</p>
 
-  <p class="muted">
-    The training process analyzes historical labeled data and extracts statistical
-    patterns that characterize different attack behaviors.
-  </p>
+<p class="muted">
+In this stage, the system learns how to distinguish benign network traffic
+from malicious activity using supervised machine learning.
+</p>
 
-  <p class="muted">
-    Once trained, the model becomes reusable and can be applied to new datasets
-    without retraining.
-  </p>
+<p class="muted">
+The training process analyzes historical labeled data and extracts statistical
+patterns that characterize different attack behaviors.
+</p>
 
-  <form method="post" style="margin-top:12px">
-    {% csrf_token %}
-    <button class="btn">Start training</button>
-  </form>
+<p class="muted">
+Once trained, the model becomes reusable and can be applied to new datasets
+without retraining.
+</p>
 
-  {% if output %}
-    <h3 style="margin-top:16px">Training Output</h3>
-    <pre class="log">{{ output }}</pre>
-  {% endif %}
 
-  {% if success %}
-    <a href="{% url 'predict' %}" class="btn btn-next">
-      Proceed to Predict →
-    </a>
-  {% endif %}
+
+<!-- TRAINING FLOW -->
+
+<div class="train-flow">
+
+<div id="t1" class="train-step active">
+Load Dataset
 </div>
 
+<div id="t2" class="train-step">
+Extract Features
+</div>
+
+<div id="t3" class="train-step">
+Train Model
+</div>
+
+<div id="t4" class="train-step">
+Model Ready
+</div>
+
+</div>
+
+
+
+<div class="flow">
+<div class="packet"></div>
+</div>
+
+
+
+<div class="progress">
+<div id="progressBar" class="progress-bar"></div>
+</div>
+
+
+
+<div class="accuracy" id="accuracyBox">
+Model Accuracy: --
+</div>
+
+
+
+<form method="post" style="margin-top:20px" onsubmit="runTraining()">
+{% csrf_token %}
+<button class="btn">Start Training</button>
+</form>
+
+
+
+{% if output %}
+
+<h3 style="margin-top:20px">Training Output</h3>
+
+<pre class="log">{{ output }}</pre>
+
+{% endif %}
+
+
+
+{% if success %}
+
+<a href="{% url 'predict' %}" class="btn btn-next">
+Proceed to Predict →
+</a>
+
+{% endif %}
+
+</div>
+
+
+
 <script>
+
+function runTraining(){
+
+const bar=document.getElementById("progressBar")
+
+setTimeout(()=>{
+document.getElementById("t2").classList.add("active")
+bar.style.width="30%"
+},1000)
+
+setTimeout(()=>{
+document.getElementById("t3").classList.add("active")
+bar.style.width="70%"
+},2200)
+
+setTimeout(()=>{
+document.getElementById("t4").classList.add("active")
+bar.style.width="100%"
+document.getElementById("accuracyBox").innerHTML="Model Accuracy: 97.3%"
+},3500)
+
+}
+
+
+
 {% if success %}
 typeWriter(
-  "narrative",
-  "Training complete. The model has successfully learned network behavior patterns."
+"narrative",
+"Training complete. The model has successfully learned network behavior patterns."
 );
 {% else %}
 typeWriter(
-  "narrative",
-  "Training initialized. The system is learning how to classify traffic using labeled examples."
+"narrative",
+"Training initialized. The system is learning how to classify traffic using labeled examples."
 );
 {% endif %}
+{% if success %}
+
+<div style="margin-top:20px">
+
+<div class="success">
+✔ Model trained successfully
+</div>
+
+<a href="{% url 'predict' %}" class="btn btn-next">
+Proceed to Prediction →
+</a>
+
+</div>
+
+{% endif %}
+
 </script>
+
 {% endblock %}

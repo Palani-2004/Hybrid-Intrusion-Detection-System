@@ -1,206 +1,263 @@
 # attack_knowledge.py
 # --------------------------------------------------
 # Hybrid IDS Intrusion Knowledge Base
-# Ensemble Learning + Signature-Based Analysis
+# Ensemble Learning + Signature-Based Detection
 # --------------------------------------------------
 
 ATTACK_KNOWLEDGE = {
 
 # ==================================================
-# 1. BRUTE FORCE & CREDENTIAL ATTACKS
+# 1. NETWORK FLOODING / AVAILABILITY ATTACKS
 # ==================================================
 
-"FTP-BruteForce": {
+"Data Flood": {
+    "category": "Availability Attacks",
+    "severity": "High",
+    "description": (
+        "A Data Flood attack overwhelms a network or server by transmitting "
+        "extremely large volumes of packets within a short time period. "
+        "The objective is to exhaust bandwidth and system processing resources "
+        "so legitimate traffic cannot be served."
+    ),
+    "technical_details": (
+        "Attackers generate massive packet streams using automated tools or "
+        "botnets. These packets saturate network interfaces, buffers, and "
+        "processing queues."
+    ),
+    "evidence": [
+        "Extremely high packet transmission rate",
+        "Network congestion and latency spikes",
+        "Large volumes of repetitive packets",
+        "Unusual increase in inbound traffic",
+        "Packet drop rate significantly increased"
+    ],
+    "root_cause": (
+        "Lack of traffic filtering, inadequate bandwidth control, and "
+        "absence of rate-limiting mechanisms."
+    ),
+    "impact": [
+        "Network congestion",
+        "Service disruption",
+        "Packet loss",
+        "Infrastructure resource exhaustion"
+    ],
+    "mitigation": [
+        "Implement traffic shaping and rate limiting",
+        "Deploy network intrusion detection systems",
+        "Configure firewall filtering rules",
+        "Increase network capacity"
+    ],
+    "real_world_example": (
+        "Attackers use botnet nodes to continuously send packets to a "
+        "target web server until the network interface becomes saturated."
+    ),
+    "final_verdict": "Malicious — Confirmed Flooding Activity"
+},
+
+"DoS": {
+    "category": "Availability Attacks",
+    "severity": "High",
+    "description": (
+        "A Denial of Service (DoS) attack attempts to disrupt the availability "
+        "of a system or network by overwhelming it with excessive requests or "
+        "traffic, preventing legitimate users from accessing services."
+    ),
+    "technical_details": (
+        "DoS attacks typically target server resources such as CPU, memory, "
+        "connection queues, or bandwidth using protocol or application-level "
+        "flooding techniques."
+    ),
+    "evidence": [
+        "Abnormally high traffic volume",
+        "Sudden spike in packets per second",
+        "High bandwidth utilization",
+        "Repeated identical requests from same IP"
+    ],
+    "root_cause": (
+        "Insufficient rate limiting and lack of defensive infrastructure."
+    ),
+    "impact": [
+        "Service downtime",
+        "Server crash",
+        "Performance degradation"
+    ],
+    "mitigation": [
+        "Implement request rate limiting",
+        "Deploy Web Application Firewall",
+        "Use DDoS mitigation services"
+    ],
+    "real_world_example": (
+        "A malicious script repeatedly sends requests to a web server until "
+        "its request queue becomes exhausted."
+    ),
+    "final_verdict": "Malicious — Confirmed DoS Activity"
+},
+
+"DoS-SYN-Flood": {
+    "category": "Availability Attacks",
+    "severity": "High",
+    "description": (
+        "A SYN Flood attack exploits the TCP handshake mechanism by sending "
+        "large numbers of SYN packets without completing the handshake."
+    ),
+    "technical_details": (
+        "The server allocates resources for half-open TCP connections, which "
+        "eventually exhaust connection queues."
+    ),
+    "evidence": [
+        "Large number of half-open TCP connections",
+        "High SYN packet rate",
+        "Incomplete TCP handshakes"
+    ],
+    "root_cause": "Lack of SYN rate limiting or SYN cookie protection.",
+    "impact": [
+        "Server resource exhaustion",
+        "Connection queue overflow"
+    ],
+    "mitigation": [
+        "Enable SYN cookies",
+        "Deploy firewall rate limiting"
+    ],
+    "real_world_example": (
+        "Attackers send thousands of SYN packets per second but never "
+        "complete the handshake."
+    ),
+    "final_verdict": "Malicious — SYN Flood Detected"
+},
+
+"DoS-HTTP-Flood": {
+    "category": "Availability Attacks",
+    "severity": "High",
+    "description": (
+        "HTTP Flood attacks overwhelm web servers with large numbers of "
+        "HTTP requests, exhausting application resources."
+    ),
+    "technical_details": (
+        "Attackers send high volumes of GET or POST requests, often using "
+        "distributed systems or botnets."
+    ),
+    "evidence": [
+        "High rate of HTTP requests",
+        "Repeated identical HTTP queries"
+    ],
+    "root_cause": "Unprotected web endpoints and lack of request throttling.",
+    "impact": [
+        "Application downtime",
+        "Slow response times"
+    ],
+    "mitigation": [
+        "Deploy WAF",
+        "Enable API rate limiting"
+    ],
+    "real_world_example": (
+        "Bots continuously request large dynamic pages causing CPU spikes."
+    ),
+    "final_verdict": "Malicious — HTTP Flood Detected"
+},
+
+# ==================================================
+# 2. DATA BREACH / CONFIDENTIALITY ATTACKS
+# ==================================================
+
+"Data Exfiltration": {
+    "category": "Data Breach",
+    "severity": "Critical",
+    "description": (
+        "Data exfiltration is the unauthorized transfer of sensitive data "
+        "from internal systems to external locations controlled by attackers."
+    ),
+    "technical_details": (
+        "Attackers often use encrypted channels, DNS tunneling, or covert "
+        "file transfers to move stolen data."
+    ),
+    "evidence": [
+        "Large outbound data transfers",
+        "Connections to unknown external IPs",
+        "Encrypted outbound traffic spikes"
+    ],
+    "root_cause": "Compromised credentials or malware infection.",
+    "impact": [
+        "Sensitive data loss",
+        "Regulatory penalties",
+        "Reputational damage"
+    ],
+    "mitigation": [
+        "Deploy Data Loss Prevention systems",
+        "Monitor outbound traffic",
+        "Implement strong access controls"
+    ],
+    "real_world_example": (
+        "A compromised employee account uploads confidential files "
+        "to an external cloud storage service."
+    ),
+    "final_verdict": "Malicious — Data Exfiltration Attempt"
+},
+
+# ==================================================
+# 3. CREDENTIAL ATTACKS
+# ==================================================
+
+"BruteForce": {
     "category": "Credential Attacks",
     "severity": "High",
     "description": (
-        "An FTP Brute Force attack occurs when an attacker repeatedly attempts "
-        "to authenticate against an FTP service using multiple username–password "
-        "combinations. These attacks are usually automated and exploit weak, "
-        "default, or reused credentials to gain unauthorized access."
+        "A brute force attack attempts to guess passwords by repeatedly "
+        "trying different combinations until correct credentials are found."
+    ),
+    "technical_details": (
+        "Attack tools automate password attempts against authentication "
+        "systems using large password dictionaries."
     ),
     "evidence": [
-        "Abnormally high number of failed FTP login attempts",
-        "Repeated authentication requests from the same source IP",
-        "Authentication failure rate exceeding normal thresholds",
-        "Hybrid IDS confirmation using ML anomaly scoring and FTP brute-force signatures"
+        "Multiple login failures",
+        "Repeated authentication attempts",
+        "High login failure ratio"
     ],
-    "root_cause": (
-        "Weak or reused credentials combined with unrestricted exposure "
-        "of the FTP service to external networks."
-    ),
+    "root_cause": "Weak passwords and missing account lockout policies.",
     "impact": [
-        "Unauthorized system access",
-        "Data compromise or exfiltration",
-        "Malicious file upload via FTP",
-        "Potential lateral movement within the network"
+        "Unauthorized access",
+        "Account compromise"
     ],
     "mitigation": [
-        "Enforce strong password policies",
-        "Implement account lockout and rate limiting",
-        "Enable multi-factor authentication",
-        "Restrict FTP access by IP allowlists",
-        "Replace FTP with secure alternatives such as SFTP or FTPS"
+        "Enable account lockout policies",
+        "Use MFA",
+        "Monitor login attempts"
     ],
-    "final_verdict": "Malicious — Confirmed by Hybrid Detection Engine"
+    "real_world_example": (
+        "An attacker attempts thousands of login attempts against "
+        "an admin portal."
+    ),
+    "final_verdict": "Malicious — Brute Force Attack"
 },
 
 "SSH-BruteForce": {
     "category": "Credential Attacks",
     "severity": "High",
     "description": (
-        "An SSH Brute Force attack involves repeated authentication attempts "
-        "against SSH services to gain unauthorized remote access. Attackers "
-        "exploit weak credentials and open SSH ports, often leading to full "
-        "server compromise."
+        "SSH brute force attacks repeatedly attempt authentication against "
+        "SSH services to gain remote access."
+    ),
+    "technical_details": (
+        "Automated scripts attempt thousands of username/password combinations."
     ),
     "evidence": [
-        "Multiple failed SSH login attempts",
-        "Abnormal authentication frequency",
-        "Repeated access attempts from identical or rotating IPs",
-        "Machine learning detection of anomalous login behavior",
-        "Signature-based SSH brute-force pattern match"
+        "Repeated SSH login failures",
+        "Authentication attempts from same IP"
     ],
-    "root_cause": (
-        "Password-based SSH authentication with weak credentials "
-        "and unrestricted network exposure."
-    ),
+    "root_cause": "Weak SSH credentials.",
     "impact": [
         "Unauthorized remote access",
-        "Privilege escalation",
-        "Malware installation",
-        "Use of compromised host for further attacks"
+        "System compromise"
     ],
     "mitigation": [
-        "Disable password-based SSH authentication",
-        "Enforce key-based authentication",
-        "Deploy intrusion prevention tools such as Fail2Ban",
-        "Restrict SSH access using firewall rules and IP whitelisting"
+        "Disable password authentication",
+        "Use SSH keys",
+        "Deploy Fail2Ban"
     ],
-    "final_verdict": "Malicious — Confirmed by Hybrid Detection Engine"
-},
-
-"Credential-Stuffing": {
-    "category": "Credential Attacks",
-    "severity": "High",
-    "description": (
-        "Credential Stuffing attacks use leaked or breached username–password "
-        "pairs to attempt authentication across multiple services. These attacks "
-        "rely heavily on password reuse and automated login attempts."
+    "real_world_example": (
+        "Bots attempt login attempts against port 22 continuously."
     ),
-    "evidence": [
-        "Login attempts across many user accounts",
-        "Authentication patterns matching known breached credentials",
-        "Anomalous success-to-failure ratios detected by ML model"
-    ],
-    "root_cause": (
-        "Password reuse across platforms and lack of multi-factor authentication."
-    ),
-    "impact": [
-        "Account compromise",
-        "Identity theft",
-        "Unauthorized access to sensitive systems"
-    ],
-    "mitigation": [
-        "Enforce multi-factor authentication",
-        "Monitor for breached credentials",
-        "Implement login anomaly detection",
-        "Educate users on password hygiene"
-    ],
-    "final_verdict": "Malicious — Confirmed by Hybrid Detection Engine"
-},
-
-# ==================================================
-# 2. DENIAL OF SERVICE (DoS)
-# ==================================================
-
-"DoS-SYN-Flood": {
-    "category": "Denial of Service",
-    "severity": "High",
-    "description": (
-        "A SYN Flood attack overwhelms a target server by sending a large volume "
-        "of TCP SYN packets without completing the handshake, exhausting server "
-        "resources and preventing legitimate connections."
-    ),
-    "evidence": [
-        "Extremely high rate of TCP SYN packets",
-        "Large number of half-open TCP connections",
-        "Traffic volume anomalies detected by ML",
-        "Signature match for SYN flood attack patterns"
-    ],
-    "root_cause": (
-        "Lack of SYN rate limiting and insufficient network hardening."
-    ),
-    "impact": [
-        "Service unavailability",
-        "Network resource exhaustion"
-    ],
-    "mitigation": [
-        "Enable SYN cookies",
-        "Apply firewall-based rate limiting",
-        "Deploy intrusion prevention systems"
-    ],
-    "final_verdict": "Malicious — Confirmed by Hybrid Detection Engine"
-},
-
-"DoS-HTTP-Flood": {
-    "category": "Denial of Service",
-    "severity": "High",
-    "description": (
-        "An HTTP Flood attack overwhelms web servers by sending a massive number "
-        "of HTTP requests, often designed to resemble legitimate traffic to evade "
-        "basic detection mechanisms."
-    ),
-    "evidence": [
-        "High HTTP request rate per second",
-        "Repeated identical GET or POST requests",
-        "Abnormal session behavior detected by ML"
-    ],
-    "root_cause": (
-        "Unprotected web endpoints and lack of application-layer rate controls."
-    ),
-    "impact": [
-        "Application downtime",
-        "Degraded user experience"
-    ],
-    "mitigation": [
-        "Deploy Web Application Firewalls (WAF)",
-        "Implement application-level rate limiting",
-        "Use traffic profiling and anomaly detection"
-    ],
-    "final_verdict": "Malicious — Confirmed by Hybrid Detection Engine"
-},
-
-# ==================================================
-# 3. DISTRIBUTED DENIAL OF SERVICE (DDoS)
-# ==================================================
-
-"DDoS-UDP-Amplification": {
-    "category": "Distributed Denial of Service",
-    "severity": "Critical",
-    "description": (
-        "A UDP Amplification attack leverages misconfigured UDP services to "
-        "amplify traffic volume, flooding the target network using spoofed "
-        "source addresses."
-    ),
-    "evidence": [
-        "Large inbound UDP response packets",
-        "Multiple geographically distributed source IPs",
-        "Traffic amplification ratios detected by ML"
-    ],
-    "root_cause": (
-        "Open UDP services exploited as amplification vectors."
-    ),
-    "impact": [
-        "Severe network congestion",
-        "Complete service outage"
-    ],
-    "mitigation": [
-        "ISP-level traffic filtering",
-        "DDoS mitigation services",
-        "Disable unnecessary UDP services"
-    ],
-    "final_verdict": "Malicious — Confirmed by Hybrid Detection Engine"
+    "final_verdict": "Malicious — SSH Brute Force"
 },
 
 # ==================================================
@@ -211,136 +268,142 @@ ATTACK_KNOWLEDGE = {
     "category": "Web Attacks",
     "severity": "Critical",
     "description": (
-        "SQL Injection attacks inject malicious SQL statements into application "
-        "inputs, allowing attackers to manipulate backend databases and extract "
-        "or modify sensitive data."
+        "SQL Injection attacks manipulate database queries by injecting "
+        "malicious SQL commands through application input fields."
+    ),
+    "technical_details": (
+        "Attackers exploit improper input validation to execute unauthorized "
+        "database commands."
     ),
     "evidence": [
-        "Suspicious SQL keywords in request payloads",
-        "Database error responses",
-        "Signature match for known SQL injection patterns"
+        "SQL keywords in HTTP parameters",
+        "Database error responses"
     ],
-    "root_cause": (
-        "Lack of input validation and improper query construction."
-    ),
+    "root_cause": "Improper input validation.",
     "impact": [
         "Database compromise",
-        "Data leakage or manipulation"
+        "Data leakage"
     ],
     "mitigation": [
-        "Use prepared statements",
-        "Sanitize all user inputs",
-        "Deploy Web Application Firewall rules"
+        "Prepared SQL statements",
+        "Input validation"
     ],
-    "final_verdict": "Malicious — Confirmed by Hybrid Detection Engine"
+    "real_world_example": (
+        "An attacker injects ' OR 1=1 -- into login fields."
+    ),
+    "final_verdict": "Malicious — SQL Injection"
 },
 
 "XSS": {
     "category": "Web Attacks",
     "severity": "High",
     "description": (
-        "Cross-Site Scripting attacks inject malicious scripts into web pages, "
-        "allowing attackers to hijack user sessions or perform actions on behalf "
-        "of authenticated users."
+        "Cross-Site Scripting (XSS) injects malicious scripts into "
+        "web pages viewed by other users."
+    ),
+    "technical_details": (
+        "The malicious script executes in the victim's browser."
     ),
     "evidence": [
-        "Script tags detected in request payloads",
-        "Unescaped output patterns",
-        "Signature match for XSS attack vectors"
+        "Script tags in HTTP payload",
+        "Unescaped user input"
     ],
-    "root_cause": (
-        "Improper output encoding and lack of content validation."
-    ),
+    "root_cause": "Improper output encoding.",
     "impact": [
         "Session hijacking",
         "User data theft"
     ],
     "mitigation": [
         "Output encoding",
-        "Implement Content Security Policy (CSP)",
-        "Validate and sanitize user inputs"
+        "Content Security Policy"
     ],
-    "final_verdict": "Malicious — Confirmed by Hybrid Detection Engine"
+    "real_world_example": (
+        "A comment form injects malicious JavaScript."
+    ),
+    "final_verdict": "Malicious — XSS Attack"
 },
 
 # ==================================================
-# 5. RECONNAISSANCE & SCANNING
+# 5. RECONNAISSANCE
 # ==================================================
 
-"Port-Scanning": {
-    "category": "Reconnaissance",
+"Port Scan": {
+    "category": "Reconnaissance Attacks",
     "severity": "Medium",
     "description": (
-        "Port scanning involves systematically probing network ports to identify "
-        "active services and potential vulnerabilities."
+        "Port scanning probes network ports to identify open services "
+        "and potential attack surfaces."
+    ),
+    "technical_details": (
+        "Tools like Nmap perform automated scans across thousands of ports."
     ),
     "evidence": [
-        "Sequential or randomized port connection attempts",
-        "Unusual connection patterns detected by ML"
+        "Sequential port connection attempts",
+        "Multiple connection attempts in short time"
     ],
-    "root_cause": (
-        "Exposed network services and insufficient firewall restrictions."
-    ),
+    "root_cause": "Exposed network services.",
     "impact": [
-        "Attack surface discovery",
-        "Preparation for subsequent attacks"
+        "Discovery of vulnerable services"
     ],
     "mitigation": [
-        "Firewall rules",
-        "Port hardening",
-        "Network segmentation"
+        "Firewall filtering",
+        "Disable unused ports"
     ],
-    "final_verdict": "Suspicious — Confirmed by Hybrid Detection Engine"
+    "real_world_example": (
+        "An attacker scans ports 1–65535 of a server."
+    ),
+    "final_verdict": "Suspicious — Port Scan Detected"
 },
 
 # ==================================================
-# 6. MALWARE & BOTNET ACTIVITY
+# 6. MALWARE ACTIVITY
 # ==================================================
 
 "C2-Traffic": {
-    "category": "Malware",
+    "category": "Malware Activity",
     "severity": "Critical",
     "description": (
-        "Command and Control (C2) traffic indicates communication between an "
-        "infected host and attacker-controlled servers, enabling remote control "
-        "and data exfiltration."
+        "Command and Control traffic occurs when compromised systems "
+        "communicate with attacker infrastructure."
+    ),
+    "technical_details": (
+        "Malware periodically sends beacon signals to external servers."
     ),
     "evidence": [
-        "Periodic beaconing behavior",
-        "Connections to known malicious IP addresses",
-        "ML-detected abnormal traffic patterns"
+        "Periodic outbound connections",
+        "Connections to suspicious IP addresses"
     ],
-    "root_cause": (
-        "Malware infection within the network."
-    ),
+    "root_cause": "Malware infection.",
     "impact": [
-        "Remote system control",
-        "Data exfiltration",
-        "Botnet participation"
+        "Remote attacker control",
+        "Data theft"
     ],
     "mitigation": [
-        "Endpoint protection solutions",
-        "Network isolation of infected hosts",
-        "Threat intelligence-based blocking"
+        "Isolate infected endpoints",
+        "Perform malware removal"
     ],
-    "final_verdict": "Malicious — Confirmed by Hybrid Detection Engine"
+    "real_world_example": (
+        "A compromised workstation periodically connects to a botnet server."
+    ),
+    "final_verdict": "Malicious — Command and Control Communication"
 },
 
 # ==================================================
-# 7. BENIGN TRAFFIC
+# 7. NORMAL TRAFFIC
 # ==================================================
 
 "Benign": {
-    "category": "Normal",
+    "category": "Normal Traffic",
     "severity": "None",
     "description": (
-        "Legitimate network traffic generated by normal user activity without "
-        "any malicious intent."
+        "Legitimate network traffic generated during normal system operation."
     ),
+    "technical_details": "Normal user interactions and application traffic.",
     "evidence": [],
     "root_cause": "",
     "impact": [],
     "mitigation": [],
+    "real_world_example": "User browsing a website normally.",
     "final_verdict": "Benign — No Threat Detected"
 }
 

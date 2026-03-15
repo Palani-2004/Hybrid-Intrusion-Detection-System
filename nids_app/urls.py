@@ -3,6 +3,9 @@ from . import views
 from .views import receive_alert
 
 urlpatterns = [
+    # -------------------------------------------------
+    # LIVE ALERT RECEIVER (from IDS sensors)
+    # -------------------------------------------------
     path("api/alert/", receive_alert, name="receive_alert"),
 
     # -------------------------------------------------
@@ -39,16 +42,17 @@ urlpatterns = [
     ),
 
     # -------------------------------------------------
-    # DASHBOARD DATA API
+    # DASHBOARD DATA APIs
     # -------------------------------------------------
-    # path(
-    #     "api/dashboard-data/",
-    #     views.dashboard_data_api,
-    #     name="dashboard_data_api",
-       
+    path(
+        "api/dashboard-batch/",
+        views.dashboard_batch_api,
+        name="dashboard_batch_api",
+    ),
 
-        
-    # ),
-    path("api/dashboard-data/", views.dashboard_data_api, name="dashboard_data"),
-    path("dashboard/", views.dashboard_view, name="dashboard"),
+    path(
+        "api/dashboard-live/",
+        views.dashboard_live_api,
+        name="dashboard_live_api",
+    ),
 ]

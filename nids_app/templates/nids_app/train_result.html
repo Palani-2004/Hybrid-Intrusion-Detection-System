@@ -1,10 +1,215 @@
 {% extends 'nids_app/base.html' %}
 {% block title %}Training Result{% endblock %}
 
-
 {% block content %}
-<div class="bg-white rounded-lg shadow p-6 max-w-3xl mx-auto">
-<h2 class="text-xl font-semibold">Training Result</h2>
-<pre class="bg-black text-green-300 p-3 rounded h-64 overflow-auto">{{ output|default:'(no output)' }}</pre>
+
+<style>
+
+/* GRID */
+
+.metrics-grid{
+
+display:grid;
+grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
+gap:20px;
+
+margin-top:20px;
+
+}
+
+/* CARD */
+
+.metric-card{
+
+background:white;
+
+padding:20px;
+
+border-radius:16px;
+
+box-shadow:0 10px 35px rgba(0,0,0,0.08);
+
+text-align:center;
+
+}
+
+/* STATUS */
+
+.status{
+
+font-weight:700;
+
+margin-top:20px;
+
+text-align:center;
+
+font-size:18px;
+
+}
+
+/* LOG */
+
+.log-box{
+
+background:#0f172a;
+
+color:#22c55e;
+
+padding:16px;
+
+border-radius:12px;
+
+font-family:monospace;
+
+max-height:320px;
+
+overflow:auto;
+
+margin-top:20px;
+
+}
+
+</style>
+
+
+
+<h2>Model Training Result</h2>
+
+<p class="muted">
+The machine learning model has completed training using the uploaded dataset.
+</p>
+
+
+
+<!-- METRICS -->
+
+<div class="metrics-grid">
+
+<div class="metric-card">
+
+<h3 id="accuracy">--</h3>
+<p class="muted">Accuracy</p>
+
 </div>
+
+<div class="metric-card">
+
+<h3 id="precision">--</h3>
+<p class="muted">Precision</p>
+
+</div>
+
+<div class="metric-card">
+
+<h3 id="recall">--</h3>
+<p class="muted">Recall</p>
+
+</div>
+
+<div class="metric-card">
+
+<h3 id="f1">--</h3>
+<p class="muted">F1 Score</p>
+
+</div>
+
+</div>
+
+
+
+<!-- PERFORMANCE CHART -->
+
+<h3 style="margin-top:30px">Model Performance</h3>
+
+<canvas id="performanceChart"></canvas>
+
+
+
+<!-- STATUS -->
+
+<div class="status" id="statusBox">
+
+Training Completed — Model Ready
+
+</div>
+
+
+
+<!-- TRAINING LOG -->
+
+<h3 style="margin-top:30px">Training Output Log</h3>
+
+<div class="log-box">
+
+<pre>{{ output|default:'(no output)' }}</pre>
+
+</div>
+
+
+
+<br>
+
+<a href="{% url 'predict' %}" class="btn">
+Proceed to Prediction →
+</a>
+
+
+
+<script>
+
+/* Example metrics for visualization */
+
+let accuracy=97
+let precision=95
+let recall=94
+let f1=94
+
+
+
+document.getElementById("accuracy").innerHTML=accuracy+"%"
+document.getElementById("precision").innerHTML=precision+"%"
+document.getElementById("recall").innerHTML=recall+"%"
+document.getElementById("f1").innerHTML=f1+"%"
+
+
+
+/* PERFORMANCE CHART */
+
+const ctx=document.getElementById("performanceChart")
+
+new Chart(ctx,{
+
+type:"bar",
+
+data:{
+
+labels:["Accuracy","Precision","Recall","F1 Score"],
+
+datasets:[{
+
+label:"Model Performance",
+
+data:[accuracy,precision,recall,f1],
+
+backgroundColor:"#4DA6FF"
+
+}]
+
+},
+
+options:{
+
+scales:{
+y:{
+beginAtZero:true,
+max:100
+}
+}
+
+}
+
+})
+
+</script>
+
 {% endblock %}

@@ -1,242 +1,367 @@
 {% extends "nids_app/base.html" %}
+{% load static %}
 {% block title %}Hybrid IDS Dashboard{% endblock %}
+
 {% block content %}
 
 <style>
-.dashboard-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 24px;
+
+.mode-buttons{
+display:flex;
+gap:12px;
+margin-bottom:25px;
 }
 
-.chart-box {
-    background: #0b1220;
-    padding: 24px;
-    border-radius: 14px;
+.mode-btn{
+padding:10px 20px;
+border-radius:12px;
+border:none;
+font-weight:600;
+cursor:pointer;
+background:linear-gradient(135deg,#4DA6FF,#1E88E5);
+color:white;
 }
 
-.details-box {
-    background: #161b22;
-    padding: 20px;
-    border-radius: 12px;
-    max-height: 80vh;
-    overflow-y: auto;
+.mode-btn.active{
+background:#0f172a;
 }
 
-.details-box h3,
-.details-box h4 {
-    margin-top: 16px;
-    color: #f85149;
+.dashboard-grid{
+display:grid;
+grid-template-columns:1fr 1fr;
+gap:30px;
 }
 
-.details-box p,
-.details-box li {
-    line-height: 1.6;
+.chart-box{
+background:white;
+padding:25px;
+border-radius:18px;
+box-shadow:0 12px 40px rgba(0,0,0,0.08);
 }
 
-.confidence-bar {
-    background: #30363d;
-    border-radius: 8px;
-    overflow: hidden;
-    margin-bottom: 12px;
+.details-box{
+background:white;
+padding:22px;
+border-radius:18px;
+box-shadow:0 12px 40px rgba(0,0,0,0.08);
 }
 
-.confidence-fill {
-    padding: 6px;
-    font-weight: bold;
-    text-align: right;
-    transition: width 0.6s ease;
+#live-alerts{
+border-collapse:collapse;
+width:100%;
 }
+
+#live-alerts th{
+background:#4DA6FF;
+color:white;
+padding:10px;
+}
+
+#live-alerts td{
+padding:10px;
+border-bottom:1px solid #eee;
+}
+
+.attack-stream{
+background:#0f172a;
+color:#22c55e;
+padding:16px;
+border-radius:12px;
+font-family:monospace;
+max-height:220px;
+overflow:auto;
+}
+
+.attack-entry{
+padding:4px 0;
+border-bottom:1px solid rgba(255,255,255,0.05);
+}
+
+.attack-high{color:#ef4444;font-weight:600;}
+.attack-medium{color:#f59e0b;}
+.attack-low{color:#22c55e;}
+
 </style>
 
-<div class="dashboard-grid">
 
-    <div class="chart-box">
-        <h3>Attack Distribution</h3>
-        <canvas id="idsDonut"></canvas>
+<div class="mode-buttons">
 
-        <p class="muted" style="margin-top:10px">
-            Click <b>Malicious</b> to explore intrusion types
-        </p>
+<button id="batchBtn" class="mode-btn active" onclick="loadBatch()">Batch Analysis</button>
 
-        <button id="backBtn"
-                class="btn"
-                style="display:none;margin-top:10px"
-                onclick="resetDonut()">
-            ← Back
-        </button>
-    </div>
-
-    <div id="attackDetails" class="details-box">
-        <h3>No active intrusion selected</h3>
-        <p>Click an intrusion to view full technical details.</p>
-    </div>
+<button id="liveBtn" class="mode-btn" onclick="loadLive()">Live Detection</button>
 
 </div>
 
-<!-- ===================== LIVE ALERTS SECTION ===================== -->
+<div class="card">
+
+<h3>Network Monitoring Architecture</h3>
+
+<img src="{% static 'images/ids_architecture.png' %}" 
+     style="width:100%;border-radius:10px;margin-top:15px;">
+
+<p class="muted">
+Traffic entering the network is analyzed using hybrid detection
+combining machine learning and signature-based rules.
+</p>
+
+<div class="dashboard-grid">
+
+<div class="chart-box">
+
+<h3>Attack Distribution</h3>
+
+<canvas id="idsDonut"></canvas>
+
+<p class="muted">Click <b>Malicious</b> to explore intrusion types</p>
+
+<button id="backBtn" class="btn"
+style="display:none;margin-top:10px"
+onclick="resetDonut()">Back</button>
+
+</div>
+
+
+<div id="attackDetails" class="details-box">
+
+<h3>No active intrusion selected</h3>
+<p>Click an intrusion slice to view detailed explanation.</p>
+
+</div>
+
+</div>
+
+
+<hr style="margin:50px 0;">
+
+
+<h2>Live Intrusion Alerts</h2>
+
+<table id="live-alerts">
+
+<thead>
+<tr>
+<th>IP</th>
+<th>Attack Type</th>
+<th>Severity</th>
+<th>Timestamp</th>
+</tr>
+</thead>
+
+<tbody></tbody>
+
+</table>
+
 
 <hr style="margin:40px 0;">
 
-<h2>🔴 Live Intrusion Alerts (Real-Time)</h2>
 
-<table border="1" width="100%" id="live-alerts">
-    <thead>
-        <tr>
-            <th>IP</th>
-            <th>Attack Type</th>
-            <th>Severity</th>
-            <th>Timestamp</th>
-        </tr>
-    </thead>
-    <tbody></tbody>
-</table>
+<h2>Real-Time Attack Stream</h2>
 
-<!-- ===================== DEMO DONUT SCRIPT ===================== -->
+<div id="attackStream" class="attack-stream"></div>
+
 
 <script>
-fetch("/api/dashboard-data/")
-.then(res => res.json())
-.then(data => {
 
-    // If demo data not present, skip donut rendering
-    if (!data.benign) return;
+let chart=null
+let currentMode="batch"
+let state="overview"
+let attackData=[]
 
-    const ctx = document.getElementById("idsDonut").getContext("2d");
-    let state = "overview";
-    let chart;
-
-    const benign = data.benign;
-    const malicious = data.malicious;
-
-    const attackColors = (data.attacks || []).map((_, i) =>
-        ["#ff4d4d", "#ffa500", "#1abc9c", "#9b59b6", "#3498db"][i % 5]
-    );
-
-    chart = new Chart(ctx, {
-        type: "doughnut",
-        data: {
-            labels: ["Benign", "Malicious"],
-            datasets: [{
-                data: [benign, malicious],
-                backgroundColor: ["#2ecc71", "#e74c3c"],
-                borderWidth: 0
-            }]
-        },
-        options: {
-            responsive: true,
-            cutout: "65%",
-            plugins: { legend: { display: false } },
-            onClick(evt, elements) {
-                if (!elements.length) return;
-
-                const idx = elements[0].index;
-
-                if (state === "overview" && idx === 1 && data.attacks) {
-                    drillDown();
-                } else if (state === "drilldown" && data.attacks) {
-                    showAttack(data.attacks[idx]);
-                }
-            }
-        }
-    });
-
-    function drillDown() {
-        state = "drilldown";
-        document.getElementById("backBtn").style.display = "inline-block";
-
-        chart.data.labels = data.attacks.map(a => a.name);
-        chart.data.datasets[0].data = data.attacks.map(a => a.count);
-        chart.data.datasets[0].backgroundColor = attackColors;
-        chart.update();
-    }
-
-    window.resetDonut = function () {
-        state = "overview";
-        document.getElementById("backBtn").style.display = "none";
-
-        chart.data.labels = ["Benign", "Malicious"];
-        chart.data.datasets[0].data = [benign, malicious];
-        chart.data.datasets[0].backgroundColor = ["#2ecc71", "#e74c3c"];
-        chart.update();
-
-        document.getElementById("attackDetails").innerHTML = `
-            <h3>No active intrusion selected</h3>
-            <p>Click an intrusion to view full technical details.</p>
-        `;
-    };
-
-    function showAttack(attack) {
-
-    const box = document.getElementById("attackDetails");
-
-    if (!attack || !attack.details) {
-        box.innerHTML = "<p>No attack details available.</p>";
-        return;
-    }
-
-    box.innerHTML = `
-        <h3>🚨 Intrusion Detected: ${attack.name}</h3>
-        <p><strong>Severity:</strong> ${attack.severity}</p>
-        <p><strong>Confidence:</strong> ${attack.confidence}%</p>
-
-        <h4>Description</h4>
-        <p>${attack.details.description}</p>
-
-        <h4>Evidence</h4>
-        <ul>
-            ${attack.details.evidence.map(e => `<li>${e}</li>`).join("")}
-        </ul>
-
-        <h4>Root Cause</h4>
-        <p>${attack.details.root_cause}</p>
-
-        <h4>Impact</h4>
-        <ul>
-            ${attack.details.impact.map(i => `<li>${i}</li>`).join("")}
-        </ul>
-
-        <h4>Mitigation</h4>
-        <ul>
-            ${attack.details.mitigation.map(m => `<li>${m}</li>`).join("")}
-        </ul>
-
-        <h4>Final Verdict</h4>
-        <p>${attack.details.final_verdict}</p>
-    `;
+function loadBatch(){
+currentMode="batch"
+document.getElementById("batchBtn").classList.add("active")
+document.getElementById("liveBtn").classList.remove("active")
+loadDashboard()
 }
 
-});
-</script>
-
-<!-- ===================== LIVE ALERT SCRIPT ===================== -->
-
-<script>
-function loadLiveAlerts() {
-    fetch("/api/dashboard-data/")
-        .then(response => response.json())
-        .then(data => {
-            if (!data.alerts) return;
-
-            const tableBody = document.querySelector("#live-alerts tbody");
-            tableBody.innerHTML = "";
-
-            data.alerts.forEach(alert => {
-                const row = `
-                    <tr>
-                        <td>${alert.ip}</td>
-                        <td>${alert.attack_type}</td>
-                        <td>${alert.severity}</td>
-                        <td>${alert.timestamp}</td>
-                    </tr>
-                `;
-                tableBody.innerHTML += row;
-            });
-        });
+function loadLive(){
+currentMode="live"
+document.getElementById("liveBtn").classList.add("active")
+document.getElementById("batchBtn").classList.remove("active")
+loadDashboard()
 }
 
-loadLiveAlerts();
-setInterval(loadLiveAlerts, 3000);
+function loadDashboard(){
+
+const endpoint=currentMode==="batch"
+?"/api/dashboard-batch/"
+:"/api/dashboard-live/"
+
+fetch(endpoint)
+.then(res=>res.json())
+.then(data=>{
+renderDonut(data)
+attackData=data.attacks||[]
+if(currentMode==="live"){
+renderLiveAlerts(data.alerts||[])
+}
+})
+
+}
+
+
+function renderDonut(data){
+
+const ctx=document.getElementById("idsDonut")
+
+if(chart) chart.destroy()
+
+chart=new Chart(ctx,{
+
+type:"doughnut",
+
+data:{
+labels:["Benign","Malicious"],
+datasets:[{
+data:[data.benign||0,data.malicious||0],
+backgroundColor:["#10b981","#ef4444"]
+}]
+},
+
+options:{
+cutout:"65%",
+
+onClick(evt,elements){
+
+if(!elements.length) return
+
+let index=elements[0].index
+
+if(state==="overview" && index===1){
+showAttackBreakdown()
+}
+
+else if(state==="attacks"){
+showAttackDetails(attackData[index])
+}
+
+}
+
+}
+
+})
+
+}
+
+
+function showAttackBreakdown(){
+
+state="attacks"
+
+chart.data.labels=attackData.map(a=>a.name)
+
+chart.data.datasets[0].data=attackData.map(a=>a.count)
+
+chart.data.datasets[0].backgroundColor=[
+"#ef4444",
+"#f59e0b",
+"#3b82f6",
+"#8b5cf6",
+"#10b981"
+]
+
+chart.update()
+
+document.getElementById("backBtn").style.display="inline-block"
+
+}
+
+
+function showAttackDetails(attack){
+
+const box=document.getElementById("attackDetails")
+
+box.innerHTML=`
+
+<h3>Intrusion Detected: ${attack.name}</h3>
+
+<p><b>Severity:</b> ${attack.severity}</p>
+<p><b>Confidence:</b> ${attack.confidence}%</p>
+
+<h4>Description</h4>
+<p>${attack.details.description}</p>
+
+<h4>Technical Details</h4>
+<p>${attack.details.technical_details || "N/A"}</p>
+
+<h4>Root Cause</h4>
+<p>${attack.details.root_cause || "N/A"}</p>
+
+<h4>Evidence</h4>
+<ul>
+${(attack.details.evidence || []).map(e => `<li>${e}</li>`).join("")}
+</ul>
+
+<h4>Impact</h4>
+<ul>
+${(attack.details.impact || []).map(i => `<li>${i}</li>`).join("")}
+</ul>
+
+<h4>Mitigation</h4>
+<ul>
+${(attack.details.mitigation || []).map(m => `<li>${m}</li>`).join("")}
+</ul>
+
+<h4>Real World Example</h4>
+<p>${attack.details.real_world_example || "N/A"}</p>
+
+<h4>Final Verdict</h4>
+<p>${attack.details.final_verdict}</p>
+
+`
+
+}
+
+
+function resetDonut(){
+
+state="overview"
+
+chart.data.labels=["Benign","Malicious"]
+
+chart.data.datasets[0].data=[
+attackData.reduce((s,a)=>s+a.count,0),
+attackData.reduce((s,a)=>s+a.count,0)
+]
+
+chart.data.datasets[0].backgroundColor=["#10b981","#ef4444"]
+
+chart.update()
+
+document.getElementById("backBtn").style.display="none"
+
+document.getElementById("attackDetails").innerHTML=`
+<h3>No active intrusion selected</h3>
+<p>Click an intrusion slice to view detailed explanation.</p>
+`
+
+}
+
+
+function renderLiveAlerts(alerts){
+
+const body=document.querySelector("#live-alerts tbody")
+
+body.innerHTML=""
+
+alerts.forEach(a=>{
+
+body.innerHTML+=`
+<tr>
+<td>${a.ip}</td>
+<td>${a.attack_type}</td>
+<td>${a.severity}</td>
+<td>${a.timestamp}</td>
+</tr>
+`
+
+})
+
+}
+
+
+loadDashboard()
+
 </script>
 
 {% endblock %}

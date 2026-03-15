@@ -2,56 +2,111 @@
 {% block title %}Prediction{% endblock %}
 
 {% block content %}
+
+<style>
+
+.log{
+background:#0f172a;
+color:#22c55e;
+padding:14px;
+border-radius:10px;
+font-family:monospace;
+max-height:260px;
+overflow:auto;
+}
+
+.success-box{
+margin-top:18px;
+padding:12px;
+border-radius:10px;
+background:#ecfdf5;
+color:#065f46;
+font-weight:600;
+border:1px solid #a7f3d0;
+}
+
+</style>
+
 <div class="card">
-  <h2>Prediction</h2>
 
-  <p id="narrative" class="muted"></p>
+<h2>Prediction</h2>
 
-  <p class="muted" style="margin-top:-6px">
-    Pipeline stage:
-    <strong>Upload → Preprocess → Train → Predict → Hybrid</strong>
-  </p>
+<p id="narrative" class="muted"></p>
 
-  <p class="muted">
-    Prediction applies the trained machine learning model to unseen network traffic.
-  </p>
+<p class="muted" style="margin-top:-6px">
+Pipeline stage:
+<strong>Upload → Preprocess → Train → Predict → Hybrid</strong>
+</p>
 
-  <p class="muted">
-    Each flow is assigned a probability score representing the likelihood of malicious behavior.
-    At this stage, detection is purely statistical.
-  </p>
+<p class="muted">
+Prediction applies the trained machine learning model to unseen network traffic.
+</p>
 
-  <p class="muted">
-    Signature-based validation is applied in the next stage.
-  </p>
+<p class="muted">
+Each flow receives a probability score representing the likelihood of malicious
+activity. At this stage detection is purely machine-learning based.
+</p>
 
-  <form method="post" style="margin-top:12px">
-    {% csrf_token %}
-    <button class="btn">Run Prediction</button>
-  </form>
+<p class="muted">
+The next stage will combine these results with signature-based analysis to
+produce the final Hybrid IDS decision.
+</p>
 
-  {% if output %}
-    <pre class="log" style="margin-top:12px">{{ output }}</pre>
-  {% endif %}
 
-  {% if predicted %}
-    <a href="{% url 'hybrid' %}" class="btn btn-next">
-      Proceed to Hybrid →
-    </a>
-  {% endif %}
+<!-- RUN PREDICTION BUTTON -->
+
+<form method="post" style="margin-top:14px">
+{% csrf_token %}
+<button class="btn">Run Prediction</button>
+</form>
+
+
+<!-- OUTPUT LOG -->
+
+{% if output %}
+
+<h4 style="margin-top:20px">Prediction Log</h4>
+
+<pre class="log">{{ output }}</pre>
+
+{% endif %}
+
+
+<!-- SUCCESS MESSAGE -->
+
+{% if predicted %}
+
+<div class="success-box">
+✔ Prediction completed successfully
 </div>
 
-<script>
-{% if predicted %}
-typeWriter(
-  "narrative",
-  "Prediction complete. Machine learning probabilities generated for each traffic flow."
-);
-{% else %}
-typeWriter(
-  "narrative",
-  "Prediction phase ready. The trained model will now evaluate unseen traffic."
-);
+<a href="{% url 'hybrid' %}" class="btn btn-next">
+Proceed to Hybrid Detection →
+</a>
+
 {% endif %}
+
+</div>
+
+
+<script>
+
+{% if predicted %}
+
+typeWriter(
+"narrative",
+"Prediction complete. Machine learning probabilities were generated for each network flow. The system is now ready to apply signature-based validation."
+);
+
+{% else %}
+
+typeWriter(
+"narrative",
+"The trained model is ready to evaluate unseen traffic. Run prediction to calculate malicious probability scores."
+);
+
+{% endif %}
+
 </script>
+
 {% endblock %}

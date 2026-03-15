@@ -1,103 +1,233 @@
 {% extends "nids_app/base.html" %}
 {% load static %}
 
+{% block title %}Hybrid IDS Home{% endblock %}
+
 {% block content %}
 
 <style>
-  body {
-    background: url("{% static 'images/cyber-bg.png' %}") no-repeat center center fixed;
-    background-size: cover;
-  }
+
+/* HERO */
+
+.hero{
+display:flex;
+align-items:center;
+justify-content:space-between;
+gap:60px;
+flex-wrap:wrap;
+padding:60px 0;
+}
+
+.hero-text{
+max-width:520px;
+}
+
+.hero-text h1{
+font-size:44px;
+font-weight:700;
+margin-bottom:16px;
+}
+
+.hero-text p{
+color:#64748b;
+font-size:18px;
+margin-bottom:24px;
+}
+
+.hero-buttons{
+display:flex;
+gap:14px;
+flex-wrap:wrap;
+}
+
+/* HERO IMAGE */
+
+.hero-image img{
+
+width:550px;
+border-radius:24px;
+
+box-shadow:0 20px 60px rgba(0,0,0,0.18);
+
+}
+
+/* FEATURES */
+
+.section{
+margin-top:70px;
+}
+
+.section-title{
+text-align:center;
+font-size:28px;
+margin-bottom:40px;
+}
+
+.feature-grid{
+display:grid;
+grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+gap:20px;
+}
+
+.feature-card{
+
+padding:26px;
+background:white;
+
+border-radius:16px;
+
+box-shadow:0 10px 30px rgba(0,0,0,0.08);
+
+transition:0.3s;
+
+text-align:center;
+
+}
+
+.feature-card:hover{
+transform:translateY(-6px);
+}
+
+/* PIPELINE */
+
+.pipeline{
+
+display:flex;
+justify-content:center;
+flex-wrap:wrap;
+gap:12px;
+margin-top:20px;
+
+}
+
+.step{
+
+background:#E8F4FF;
+padding:10px 18px;
+border-radius:10px;
+font-weight:500;
+
+}
+
+.arrow{
+font-size:20px;
+}
+
 </style>
 
-<!-- HERO SECTION -->
+
+<!-- HERO -->
+
 <section class="hero">
-  <div class="hero-content">
-    <h1 class="hero-title">
-      Hybrid Intrusion Detection System
-    </h1>
-    <p class="hero-subtitle">
-      Ensemble Machine Learning + Signature-Based Cyber Defense
-    </p>
 
-    <div class="hero-buttons">
-      <a href="{% url 'upload_dataset' %}" class="btn-primary">
-        Start Detection
-      </a>
-      <a href="{% url 'dashboard' %}" class="btn-secondary">
-        View Dashboard
-      </a>
-    </div>
-  </div>
+<div class="hero-text">
 
-  <div class="hero-bg"></div>
+<h1>AI-Powered Intrusion Detection</h1>
+
+<p>
+Hybrid IDS combining machine learning anomaly detection
+with signature-based verification to identify malicious
+network activity in real time.
+</p>
+
+<div class="hero-buttons">
+
+<a href="{% url 'upload_dataset' %}" class="btn">
+Start Detection
+</a>
+
+<a href="{% url 'dashboard' %}" class="btn">
+View Dashboard
+</a>
+
+</div>
+
+</div>
+
+
+<div class="hero-image">
+
+<img src="{% static 'images/network_wave.jpg' %}">
+
+</div>
+
 </section>
 
-<!-- ABOUT SECTION -->
+
+
+<!-- FEATURES -->
+
 <section class="section">
-  <h2 class="section-title">What is Hybrid IDS?</h2>
 
-  <div class="card-grid">
-    <div class="info-card">
-      <h3>Machine Learning</h3>
-      <p>
-        Detects unknown and zero-day attacks using traffic behavior and patterns.
-      </p>
-    </div>
+<div class="section-title">
+Hybrid IDS Capabilities
+</div>
 
-    <div class="info-card">
-      <h3>Signature Detection</h3>
-      <p>
-        Confirms known attacks using predefined intrusion signatures.
-      </p>
-    </div>
+<div class="feature-grid">
 
-    <div class="info-card">
-      <h3>Hybrid Engine</h3>
-      <p>
-        Combines ML confidence and signatures for high-accuracy decisions.
-      </p>
-    </div>
-  </div>
+<div class="feature-card">
+<h3>AI Detection</h3>
+<p class="muted">
+Machine learning models identify abnormal traffic patterns.
+</p>
+</div>
+
+<div class="feature-card">
+<h3>Signature Analysis</h3>
+<p class="muted">
+Known attack signatures validate malicious traffic.
+</p>
+</div>
+
+<div class="feature-card">
+<h3>Hybrid Engine</h3>
+<p class="muted">
+Combines ML predictions with rule-based verification.
+</p>
+</div>
+
+<div class="feature-card">
+<h3>Live Monitoring</h3>
+<p class="muted">
+Interactive dashboard visualizes threats in real time.
+</p>
+</div>
+
+</div>
+
 </section>
 
-<!-- PIPELINE SECTION -->
-<section class="section dark">
-  <h2 class="section-title">Detection Pipeline</h2>
 
-  <div class="pipeline">
-    <div class="step">Upload Data</div>
-    <div class="arrow">→</div>
-    <div class="step">Preprocess</div>
-    <div class="arrow">→</div>
-    <div class="step">ML Detection</div>
-    <div class="arrow">→</div>
-    <div class="step">Signature Validation</div>
-    <div class="arrow">→</div>
-    <div class="step">Dashboard</div>
-  </div>
-</section>
 
-<!-- FEATURES SECTION -->
+<!-- PIPELINE -->
+
 <section class="section">
-  <h2 class="section-title">Why Our IDS?</h2>
 
-  <div class="card-grid">
-    <div class="info-card glow">
-      <h3>Real-Time Detection</h3>
-      <p>Identifies malicious traffic with low false positives.</p>
-    </div>
+<div class="section-title">
+Detection Pipeline
+</div>
 
-    <div class="info-card glow">
-      <h3>Explainable Attacks</h3>
-      <p>Each intrusion includes cause, impact, and mitigation.</p>
-    </div>
+<div class="pipeline">
 
-    <div class="info-card glow">
-      <h3>Interactive Dashboard</h3>
-      <p>Hierarchical donut charts with drill-down insights.</p>
-    </div>
-  </div>
+<div class="step">Upload</div>
+<div class="arrow">→</div>
+
+<div class="step">Preprocess</div>
+<div class="arrow">→</div>
+
+<div class="step">Train</div>
+<div class="arrow">→</div>
+
+<div class="step">Predict</div>
+<div class="arrow">→</div>
+
+<div class="step">Hybrid Decision</div>
+<div class="arrow">→</div>
+
+<div class="step">Dashboard</div>
+
+</div>
+
 </section>
 
 {% endblock %}

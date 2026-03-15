@@ -58,7 +58,10 @@ def main():
         return
 
     X = df.drop(columns=[label_col])
-    y = df[label_col]
+    # Convert to binary classification
+    y = df[label_col].apply(
+        lambda x: 0 if str(x).upper() == "BENIGN" else 1
+    )
 
     # -------------------------------------------------
     # Log class distribution
@@ -124,7 +127,7 @@ def main():
 
     logging.info(f"Model saved → {MODEL}")
     logging.info(f"Feature schema saved → {FEATURES}")
-
+    
     print("Model training completed successfully.")
 
 

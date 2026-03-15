@@ -50,28 +50,54 @@ def main():
     logging.info("Loading trained model...")
     clf = joblib.load(MODEL)
 
-    logging.info("Loading feature schema...")
-    feature_columns = joblib.load(FEATURES)
+    logging.info("Loading training feature schema...")
+    model_features = joblib.load(FEATURES)
 
-    # Remove ground truth if present
-    X = df.drop(columns=["Attack Type"], errors="ignore")
+    logging.info("Aligning features...")
 
     # -------------------------------------------------
-    # Enforce training feature order
+    # Robust Column Mapping (Schema Normalization)
     # -------------------------------------------------
-    missing_cols = [col for col in feature_columns if col not in X.columns]
-    if missing_cols:
-        raise ValueError(f"Missing required features for prediction: {missing_cols}")
+    COLUMN_MAPPING = {
+        "BwdPktLenMean": "BwdPacketLengthMean",
+        "FwdPktLenMean": "FwdPacketLengthMean",
+        "FlowBytsPerSec": "FlowBytes/s",
+        "FlowPktsPerSec": "FlowPackets/s",
+        "TotFwdPkts": "Total Fwd Packets",
+        "TotBwdPkts": "Total Backward Packets",
+    }
 
-    # Align and reorder columns exactly as training
-    X = X[feature_columns]
+    df.rename(columns=COLUMN_MAPPING, inplace=True)
 
-    logging.info("Running predictions...")
-    probs = clf.predict_proba(X)[:, 1]
+    # -------------------------------------------------
+    # Add Missing Features
+    # -------------------------------------------------
+    missing = set(model_features) - set(df.columns)
+    for col in missing:
+        df[col] = 0
+
+    if missing:
+        logging.warning(f"Missing columns added with 0: {missing}")
+
+    # -------------------------------------------------
+    # Drop Extra Columns + Preserve Order
+    # -------------------------------------------------
+    X = df[model_features]
+
+    # -------------------------------------------------
+    # Safe Probability Extraction
+    # -------------------------------------------------
+    if len(clf.classes_) == 2:
+        # Assume binary classification
+        positive_class = clf.classes_[1]
+        class_index = list(clf.classes_).index(positive_class)
+        probs = clf.predict_proba(X)[:, class_index]
+    else:
+        raise ValueError("Model is not binary classification.")
 
     df["ml_probability"] = probs
     df["pred_label"] = df["ml_probability"].apply(
-        lambda p: "Malicious" if p >= THRESHOLD else "Benign"
+    lambda p: "Malicious" if p >= THRESHOLD else "Benign"
     )
 
     df.to_csv(OUT, index=False)

@@ -1,21 +1,186 @@
 {% extends "nids_app/base.html" %}
-{% block title %}Pipeline Logs{% endblock %}
+{% block title %}Automated Pipeline Logs{% endblock %}
 
 {% block content %}
-<h2>Automated Pipeline Logs</h2>
 
-<pre style="
-  background:#111;
-  color:#0f0;
-  padding:16px;
-  max-height:70vh;
-  overflow:auto;
-  white-space:pre-wrap;
-">
+<style>
+
+/* PIPELINE STEPS */
+
+.pipeline{
+display:flex;
+flex-wrap:wrap;
+gap:10px;
+justify-content:center;
+margin-bottom:30px;
+}
+
+.step{
+
+padding:10px 16px;
+border-radius:10px;
+
+background:#E8F4FF;
+font-weight:600;
+
+}
+
+.step.active{
+background:#1E88E5;
+color:white;
+}
+
+/* STATUS */
+
+.status{
+
+text-align:center;
+font-weight:700;
+margin-bottom:20px;
+
+}
+
+/* LOG BOX */
+
+.log-container{
+
+background:#0f172a;
+border-radius:12px;
+padding:18px;
+
+box-shadow:0 10px 35px rgba(0,0,0,0.15);
+
+}
+
+.log-box{
+
+color:#22c55e;
+font-family:monospace;
+
+max-height:420px;
+overflow:auto;
+
+white-space:pre-wrap;
+
+}
+
+/* PROGRESS */
+
+.progress{
+
+height:10px;
+background:#e2e8f0;
+border-radius:10px;
+margin-bottom:15px;
+overflow:hidden;
+
+}
+
+.progress-bar{
+
+height:100%;
+width:0;
+background:#4DA6FF;
+transition:width 0.5s;
+
+}
+
+</style>
+
+
+
+<h2>Automated Hybrid IDS Pipeline</h2>
+
+<p class="muted">
+The system is executing the full IDS pipeline automatically.
+</p>
+
+
+
+<!-- PIPELINE -->
+
+<div class="pipeline">
+
+<div id="step1" class="step active">Upload</div>
+<div id="step2" class="step">Preprocess</div>
+<div id="step3" class="step">Train</div>
+<div id="step4" class="step">Predict</div>
+<div id="step5" class="step">Hybrid</div>
+<div id="step6" class="step">Dashboard</div>
+
+</div>
+
+
+
+<div class="status" id="status">
+Initializing pipeline...
+</div>
+
+
+
+<div class="progress">
+<div id="progressBar" class="progress-bar"></div>
+</div>
+
+
+
+<div class="log-container">
+
+<div id="logBox" class="log-box">
+
 {{ logs }}
-</pre>
+
+</div>
+
+</div>
+
+
+
+<br>
 
 <a href="{% url 'upload_dataset' %}" class="btn">
-  Back to Upload
+Back to Upload
 </a>
+
+
+
+<script>
+
+/* AUTO SCROLL LOG */
+
+const logBox=document.getElementById("logBox")
+
+logBox.scrollTop=logBox.scrollHeight
+
+
+
+/* SIMULATED PIPELINE VISUAL */
+
+let progress=0
+const bar=document.getElementById("progressBar")
+
+function nextStep(stepId,text){
+
+document.getElementById("status").innerHTML=text
+
+document.getElementById(stepId).classList.add("active")
+
+progress+=16
+
+bar.style.width=progress+"%"
+
+}
+
+setTimeout(()=>nextStep("step2","Preprocessing dataset..."),1500)
+
+setTimeout(()=>nextStep("step3","Training machine learning model..."),3500)
+
+setTimeout(()=>nextStep("step4","Running predictions..."),5500)
+
+setTimeout(()=>nextStep("step5","Hybrid detection analysis..."),7500)
+
+setTimeout(()=>nextStep("step6","Pipeline complete — loading dashboard"),9500)
+
+</script>
+
 {% endblock %}

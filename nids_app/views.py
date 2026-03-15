@@ -4,6 +4,7 @@ from pathlib import Path
 
 import pandas as pd
 from django.conf import settings
+BASE_DATA_DIR = Path(settings.BASE_DIR) / "data" / "raw"
 from django.contrib import messages
 from django.http import FileResponse, Http404, JsonResponse
 from django.shortcuts import redirect, render
@@ -17,70 +18,48 @@ from nids_app.state.pipeline_state import set_state, can_access
 import json
 import traceback
 
-# from django.http import JsonResponse
-# from django.views.decorators.csrf import csrf_exempt
-# from .models import Alert
 
-# @csrf_exempt
-# def receive_alert(request):
-#     try:
-#         if request.method != "POST":
-#             return JsonResponse({"error": f"Method was {request.method}"}, status=400)
-
-#         data = json.loads(request.body.decode("utf-8"))
-
-#         ip = data.get("ip")
-#         attack_type = data.get("attack_type")
-#         severity = data.get("severity")
-
-#         Alert.objects.create(
-#             ip=ip,
-#             attack_type=attack_type,
-#             severity=severity
-#         )
-
-#         return JsonResponse({"status": "ok"})
-
-        # return JsonResponse({
-        #     "error": str(e),
-        #     "trace": traceback.format_exc()
-        # }, status=500)
-from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
+from django.http import JsonResponse
 import json
+from .models import Alert
+
+def get_session_id(request):
+    """
+    Ensures every user has a unique pipeline session folder.
+    """
+    session_id = request.session.get("pipeline_session")
+
+    if not session_id:
+        import uuid
+        session_id = str(uuid.uuid4())
+        request.session["pipeline_session"] = session_id
+
+    return session_id 
 
 @csrf_exempt
 def receive_alert(request):
     if request.method == "POST":
         try:
-            data = json.loads(request.body.decode("utf-8"))
-            print("RECEIVED DATA:", data)
-            return JsonResponse({"status": "ok"})
+            data = json.loads(request.body)
+
+            ip = data.get("ip")
+            attack_type = data.get("attack_type")   # ✅ use real attack type
+            severity = data.get("severity")
+
+            Alert.objects.create(
+                ip=ip,
+                attack_type=attack_type,
+                severity=severity
+            )
+
+            return JsonResponse({"status": "success"})
+
         except Exception as e:
-            return JsonResponse({"error": str(e)}, status=500)
+            return JsonResponse({"error": str(e)}, status=400)
 
-    return JsonResponse({"error": "Invalid request"}, status=400)
-    
-def get_session_id(request):
-    if not request.session.session_key:
-        request.session.create()
-    return request.session.session_key
-
-# def run_script(request, script_path, success_state, success_msg, redirect_to):
-#     try:
-#         result = subprocess.run(
-#             [os.sys.executable, str(script_path)],
-#             capture_output=True,
-#             text=True,
-#             check=True,
-#         )
-#         set_state(request, success_state)
-#         messages.success(request, success_msg)
-#         return result.stdout, True
-#     except subprocess.CalledProcessError as e:
-#         messages.error(request, f"Execution failed:\n{e.stderr}")
-#         return e.stderr, False 
-    
+    return JsonResponse({"error": "Invalid method"}, status=405)
+   
 def run_script(request, script_path, success_state, success_msg, redirect_to):
     try:
         session_id = get_session_id(request)
@@ -116,29 +95,30 @@ def index(request):
 
 
 def upload_csv(request):
+
     if request.method == "POST":
-        uploaded = request.FILES.get("file") or request.FILES.get("csv_file")
-        if not uploaded:
-            messages.error(request, "No file provided.")
+
+        file = request.FILES.get("file")
+
+        if file:
+
+            session_id = get_session_id(request)
+
+            save_path = BASE_DATA_DIR / session_id
+            save_path.mkdir(parents=True, exist_ok=True)
+
+            file_path = save_path / file.name
+
+            with open(file_path, "wb+") as destination:
+                for chunk in file.chunks():
+                    destination.write(chunk)
+
+            # 🔴 THIS LINE IS MISSING IN YOUR PROJECT
+            request.session["pipeline_state"] = "UPLOADED"
+
+            messages.success(request, "Dataset uploaded successfully.")
+
             return redirect("upload_dataset")
-
-        try:
-            validate_csv(uploaded)
-        except ValueError as e:
-            messages.error(request, str(e))
-            return redirect("upload_dataset")
-
-        session_id = get_session_id(request)
-        raw_dir = Path(settings.BASE_DIR) / "data" / "raw" / session_id
-        raw_dir.mkdir(parents=True, exist_ok=True)
-
-        with open(raw_dir / "input.csv", "wb") as f:
-            for chunk in uploaded.chunks():
-                f.write(chunk)
-
-        set_state(request, "UPLOADED")
-        messages.success(request, "File uploaded successfully.")
-        return redirect("upload_dataset")
 
     return render(request, "nids_app/upload.html")
 
@@ -253,19 +233,6 @@ def download_hybrid_view(request):
     return FileResponse(open(file_path, "rb"), as_attachment=True)
 
 
-# -------------------------------------------------
-# AUTOMATED PIPELINE
-# -------------------------------------------------
-
-# @require_POST
-# def run_automated_pipeline(request):
-#     try:
-#         run_full_pipeline()
-#         messages.success(request, "Pipeline executed successfully.")
-#         return redirect("dashboard")
-#     except Exception as e:
-#         messages.error(request, f"Pipeline failed: {e}")
-#         return redirect("upload_dataset")
 @require_POST
 def run_automated_pipeline(request):
     try:
@@ -285,23 +252,18 @@ def run_automated_pipeline(request):
 # DASHBOARD PAGE VIEW
 # -------------------------------------------------
 def dashboard_view(request):
-    return render(request, "nids_app/dashboard.html")
+        return render(request, "nids_app/dashboard.html")
+
 
 from django.http import JsonResponse
 from pathlib import Path
-import pandas as pd
 from django.conf import settings
+import pandas as pd
 from .models import Alert
 from .attack_knowledge import ATTACK_KNOWLEDGE
 
-ATTACK_NAME_MAPPING = {
-    "BruteForce": "SSH-BruteForce",
-    "DoS": "DoS-SYN-Flood",
-    "BENIGN": "Benign",
-}
+def dashboard_batch_api(request):
 
-
-def dashboard_data_api(request):
     session_id = get_session_id(request)
 
     file_path = (
@@ -312,100 +274,82 @@ def dashboard_data_api(request):
         / "hybrid_output.csv"
     )
 
-    # -----------------------------
-    # Fetch Alerts
-    # -----------------------------
-    alerts = Alert.objects.order_by("-timestamp")[:50]
-    alerts_data = [
-        {
-            "ip": a.ip,
-            "attack_type": a.attack_type,
-            "severity": a.severity,
-            "timestamp": a.timestamp.strftime("%Y-%m-%d %H:%M:%S"),
-        }
-        for a in alerts
-    ]
+    benign = 0
+    malicious = 0
+    attacks = []
 
-    # -----------------------------
-    # If file does not exist → demo
-    # -----------------------------
-    if not file_path.exists():
-        return JsonResponse({
-            "benign": 3,
-            "malicious": 2,
-            "attacks": [
-                {
-                    "name": "SSH-BruteForce",
-                    "count": 1,
-                    "severity": "High",
-                    "confidence": 85,
-                    "details": ATTACK_KNOWLEDGE["SSH-BruteForce"],
-                }
-            ],
-            "alerts": alerts_data
-        })
+    if file_path.exists():
 
-    # -----------------------------
-    # Real data mode
-    # -----------------------------
-    try:
         df = pd.read_csv(file_path)
-    except Exception:
-        # If CSV fails → fallback demo
-        return JsonResponse({
-            "benign": 3,
-            "malicious": 2,
-            "attacks": [],
-            "alerts": alerts_data
-        })
 
-    # Use Final Decision column (YOUR CSV HAS THIS)
-    if "Final Decision" not in df.columns:
-        return JsonResponse({
-            "benign": 3,
-            "malicious": 2,
-            "attacks": [],
-            "alerts": alerts_data
-        })
+        if "Final Decision" in df.columns:
 
-    benign = (df["Final Decision"] == "Benign").sum()
-    malicious_df = df[df["Final Decision"] == "Malicious"]
+            benign = int((df["Final Decision"] == "Benign").sum())
+            malicious = int((df["Final Decision"] == "Malicious").sum())
+
+            malicious_df = df[df["Final Decision"] == "Malicious"]
+
+            if "Attack Type" in df.columns:
+
+                grouped = malicious_df.groupby("Attack Type")
+
+                for attack, group in grouped:
+
+                    meta = ATTACK_KNOWLEDGE.get(attack, {})
+
+                    attacks.append({
+                        "name": attack,
+                        "count": int(len(group)),
+                        "severity": meta.get("severity", "Medium"),
+                        "confidence": round(
+                            group.get("ml_probability", pd.Series([0])).mean() * 100,
+                            2
+                        ),
+                        "details": meta
+                    })
+
+    return JsonResponse({
+        "benign": benign,
+        "malicious": malicious,
+        "attacks": attacks
+    })
+
+def dashboard_live_api(request):
+
+    alerts = Alert.objects.order_by("-timestamp")
+
+    attack_counts = {}
+
+    for alert in alerts:
+        attack_counts[alert.attack_type] = (
+            attack_counts.get(alert.attack_type, 0) + 1
+        )
 
     attacks = []
 
-    if "Attack Type" in df.columns:
-        for attack, group in malicious_df.groupby("Attack Type"):
-            mapped_name = ATTACK_NAME_MAPPING.get(attack, attack)
+    for name, count in attack_counts.items():
 
-            meta = ATTACK_KNOWLEDGE.get(
-    mapped_name,
-    {
-        "severity": "Medium",
-        "description": "Attack detected by Hybrid IDS.",
-        "evidence": [],
-        "root_cause": "",
-        "impact": [],
-        "mitigation": [],
-        "final_verdict": "Malicious",
-    },
-)
+        meta = ATTACK_KNOWLEDGE.get(name, {})
 
-            attacks.append(
-                {
-                    "name": attack,
-                    "count": int(len(group)),
-                    "severity": meta["severity"],
-                    "confidence": round(group["ml_probability"].mean() * 100, 2)
-                    if "ml_probability" in group.columns
-                    else 75,
-                    "details": meta,
-                }
-            )
+        attacks.append({
+            "name": name,
+            "count": count,
+            "severity": meta.get("severity", "High"),
+            "confidence": 90,
+            "details": meta
+        })
 
     return JsonResponse({
-        "benign": int(benign),
-        "malicious": int(len(malicious_df)),
+        "benign": 0,
+        "malicious": sum(attack_counts.values()),
         "attacks": attacks,
-        "alerts": alerts_data
+        "alerts": [
+            {
+                "ip": a.ip,
+                "attack_type": a.attack_type,
+                "severity": a.severity,
+                "timestamp": a.timestamp.strftime("%Y-%m-%d %H:%M:%S"),
+            }
+            for a in alerts[:50]
+        ]
     })
-    

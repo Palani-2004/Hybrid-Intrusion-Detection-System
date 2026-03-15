@@ -2,62 +2,223 @@
 {% block title %}Preprocess{% endblock %}
 
 {% block content %}
+
+<style>
+
+/* PROCESS VISUAL */
+
+.process-visual{
+
+display:flex;
+justify-content:center;
+gap:30px;
+margin-top:30px;
+flex-wrap:wrap;
+
+}
+
+.process-step{
+
+background:white;
+padding:20px;
+border-radius:16px;
+box-shadow:0 10px 35px rgba(0,0,0,0.08);
+text-align:center;
+min-width:160px;
+
+}
+
+.process-step.active{
+
+background:#4DA6FF;
+color:white;
+
+}
+
+/* FLOW LINE */
+
+.flow{
+
+height:4px;
+background:#4DA6FF;
+margin:20px auto;
+width:60%;
+position:relative;
+
+}
+
+.packet{
+
+width:12px;
+height:12px;
+background:#1E88E5;
+border-radius:50%;
+position:absolute;
+top:-4px;
+
+animation:flowMove 3s linear infinite;
+
+}
+
+@keyframes flowMove{
+
+0%{left:0}
+100%{left:100%}
+
+}
+
+/* PROGRESS */
+
+.progress{
+
+height:10px;
+background:#e2e8f0;
+border-radius:10px;
+margin-top:20px;
+overflow:hidden;
+
+}
+
+.progress-bar{
+
+height:100%;
+width:0;
+background:#1E88E5;
+transition:width 0.6s;
+
+}
+
+</style>
+
+
+
 <div class="card">
-  <h2>Preprocessing</h2>
 
-  <p id="narrative" class="muted"></p>
+<h2>Preprocessing</h2>
 
-  <p class="muted" style="margin-top:-6px">
-    Pipeline stage:
-    <strong>Upload → Preprocess → Train → Predict → Hybrid</strong>
-  </p>
+<p id="narrative" class="muted"></p>
 
-  <p class="muted">
-    Preprocessing is one of the most critical stages in any machine learning pipeline.
-    Raw network traffic data is often noisy, inconsistent, and incompatible with
-    trained models.
-  </p>
+<p class="muted" style="margin-top:-6px">
+Pipeline stage:
+<strong>Upload → Preprocess → Train → Predict → Hybrid</strong>
+</p>
 
-  <p class="muted">
-    During this stage, the system ensures that the dataset conforms exactly to the
-    feature schema expected by the model.
-  </p>
+<p class="muted">
+Preprocessing is one of the most critical stages in any machine learning pipeline.
+Raw network traffic data is often noisy, inconsistent, and incompatible with
+trained models.
+</p>
 
-  <ul class="muted">
-    <li>Standardizing feature and column names</li>
-    <li>Normalizing attack labels (e.g., Label → Attack Type)</li>
-    <li>Removing formatting inconsistencies</li>
-    <li>Ensuring compatibility with trained models</li>
-  </ul>
+<p class="muted">
+During this stage, the system ensures that the dataset conforms exactly to the
+feature schema expected by the model.
+</p>
 
-  <p class="muted">
-    Any mismatch at this stage would propagate downstream and cause failures during
-    training or prediction.
-  </p>
+<ul class="muted">
+<li>Standardizing feature and column names</li>
+<li>Normalizing attack labels (e.g., Label → Attack Type)</li>
+<li>Removing formatting inconsistencies</li>
+<li>Ensuring compatibility with trained models</li>
+</ul>
 
-  <form method="post" style="margin-top:12px">
-    {% csrf_token %}
-    <button class="btn">Run Preprocessing</button>
-  </form>
+<p class="muted">
+Any mismatch at this stage would propagate downstream and cause failures during
+training or prediction.
+</p>
 
-  {% if success %}
-    <a href="{% url 'train' %}" class="btn btn-next">
-      Proceed to Train →
-    </a>
-  {% endif %}
+
+
+<!-- VISUAL PROCESS -->
+
+<div class="process-visual">
+
+<div id="step1" class="process-step active">
+Load Dataset
 </div>
 
+<div id="step2" class="process-step">
+Clean Data
+</div>
+
+<div id="step3" class="process-step">
+Normalize Features
+</div>
+
+<div id="step4" class="process-step">
+Ready for Training
+</div>
+
+</div>
+
+
+
+<div class="flow">
+<div class="packet"></div>
+</div>
+
+
+
+<div class="progress">
+<div id="progressBar" class="progress-bar"></div>
+</div>
+
+
+
+<form method="post" style="margin-top:20px" onsubmit="runProcess()">
+{% csrf_token %}
+<button class="btn">Run Preprocessing</button>
+</form>
+
+
+{% if success %}
+
+<a href="{% url 'train' %}" class="btn btn-next">
+Proceed to Train →
+</a>
+
+{% endif %}
+
+</div>
+
+
+
 <script>
+
+function runProcess(){
+
+const bar=document.getElementById("progressBar")
+
+setTimeout(()=>{
+document.getElementById("step2").classList.add("active")
+bar.style.width="30%"
+},800)
+
+setTimeout(()=>{
+document.getElementById("step3").classList.add("active")
+bar.style.width="60%"
+},1800)
+
+setTimeout(()=>{
+document.getElementById("step4").classList.add("active")
+bar.style.width="100%"
+},3000)
+
+}
+
+
+
 {% if success %}
 typeWriter(
-  "narrative",
-  "Preprocessing complete. Dataset is now clean, standardized, and ready for model training."
+"narrative",
+"Preprocessing complete. Dataset is now clean, standardized, and ready for model training."
 );
 {% else %}
 typeWriter(
-  "narrative",
-  "Preprocessing in progress conceptually. Raw traffic is being cleaned and aligned with model expectations."
+"narrative",
+"Preprocessing in progress conceptually. Raw traffic is being cleaned and aligned with model expectations."
 );
 {% endif %}
+
 </script>
+
 {% endblock %}

@@ -3,105 +3,348 @@
 {% block title %}Upload Dataset{% endblock %}
 
 {% block content %}
-<div class="card">
-  <h2>Upload raw CSV</h2>
 
-  <!-- TYPEWRITER NARRATIVE -->
-  <p id="narrative" class="muted"></p>
+<style>
 
-  <p class="muted" style="margin-top:-6px">
-    Pipeline stage:
-    <strong>Upload → Preprocess → Train → Predict → Hybrid</strong>
-  </p>
+/* DROP ZONE */
 
-  <p class="muted">
-    This system implements a <strong>Hybrid Intrusion Detection System (IDS)</strong>,
-    which combines the strengths of <strong>machine learning</strong> and
-    <strong>signature-based detection</strong> to identify malicious network activity.
-  </p>
+.drop-zone{
 
-  <p class="muted">
-    In real-world cybersecurity environments, relying on only one detection method
-    often leads to missed attacks or false alarms. Hybrid IDS addresses this by
-    unifying statistical learning with rule-based validation.
-  </p>
+border:2px dashed #4DA6FF;
+padding:40px;
+border-radius:16px;
+text-align:center;
+background:#f8fbff;
+cursor:pointer;
+transition:0.3s;
 
-  <p class="muted">
-    The pipeline consists of five logically ordered stages:
-  </p>
+}
 
-  <ul class="muted">
-    <li><strong>Upload</strong> — ingestion of raw network traffic data</li>
-    <li><strong>Preprocess</strong> — cleaning, normalization, and label alignment</li>
-    <li><strong>Train</strong> — learning attack patterns from labeled data</li>
-    <li><strong>Predict</strong> — assigning risk scores to unseen traffic</li>
-    <li><strong>Hybrid</strong> — combining ML output with known attack signatures</li>
-  </ul>
+.drop-zone:hover{
+background:#eef6ff;
+}
 
-  <!-- SECTION DIVIDER -->
-  <img src="{% static 'images/network-lines.png' %}"
-       class="section-divider"
-       alt="Network Flow">
+/* PIPELINE */
 
-  <p class="muted">
-    You may execute the pipeline in two modes:
-  </p>
+.pipeline{
+display:flex;
+flex-wrap:wrap;
+gap:12px;
+justify-content:center;
+margin-top:20px;
+}
 
-  <ul class="muted">
-    <li>
-      <strong>Fully Automated Mode</strong> — executes all stages in sequence and
-      immediately displays the final dashboard. This is ideal for demonstrations
-      and operational use.
-    </li>
-    <li>
-      <strong>Manual / Learning Mode</strong> — allows step-by-step execution so that
-      each stage can be studied independently. This mode is designed for academic
-      understanding and experimentation.
-    </li>
-  </ul>
+.step{
 
-  {% if messages %}
-    <div style="margin:8px 0">
-      {% for msg in messages %}
-        <div class="{{ msg.tags }}">{{ msg }}</div>
-      {% endfor %}
-    </div>
-  {% endif %}
+background:#E8F4FF;
+padding:10px 16px;
+border-radius:10px;
+font-weight:500;
 
-  <!-- UPLOAD FORM -->
-  <form method="post" enctype="multipart/form-data" class="row" style="margin-top:12px">
-    {% csrf_token %}
-    <input type="file" name="file" accept=".csv" required>
-    <button class="btn" type="submit">Upload</button>
-  </form>
+}
 
-  <div class="muted" style="margin-top:12px">
-    Example dataset: <code>cicids2017_cleaned.csv</code>
-  </div>
+.arrow{
+font-size:20px;
+}
 
-  <hr style="margin:20px 0;">
+/* BUTTON GRID */
 
-  <!-- PIPELINE MODE SELECTION -->
-  <div style="display:flex;gap:16px;flex-wrap:wrap">
-    <form method="post" action="{% url 'run_full_pipeline' %}">
-      {% csrf_token %}
-      <button class="btn btn-danger">
-        Run Full Pipeline (Automated)
-      </button>
-    </form>
+.mode-buttons{
 
-    <form method="get" action="{% url 'preprocess' %}">
-      <button class="btn btn-danger">
-        Run Pipeline (Manual / Learning Mode)
-      </button>
-    </form>
-  </div>
+display:flex;
+gap:20px;
+flex-wrap:wrap;
+margin-top:20px;
+
+}
+
+.mode-card{
+
+flex:1;
+min-width:240px;
+
+background:white;
+padding:20px;
+border-radius:16px;
+
+box-shadow:0 10px 35px rgba(0,0,0,0.08);
+
+transition:0.3s;
+
+}
+
+.mode-card:hover{
+transform:translateY(-4px);
+}
+
+/* PROGRESS */
+
+.progress{
+
+height:10px;
+background:#e2e8f0;
+border-radius:10px;
+overflow:hidden;
+margin-top:15px;
+
+}
+
+.progress-bar{
+
+height:100%;
+width:0;
+background:#1E88E5;
+transition:width 1s;
+
+}
+
+/* DATA PREVIEW */
+
+.preview-table{
+
+margin-top:20px;
+border-collapse:collapse;
+width:100%;
+
+}
+
+.preview-table th{
+background:#4DA6FF;
+color:white;
+padding:8px;
+}
+
+.preview-table td{
+padding:8px;
+border-bottom:1px solid #eee;
+}
+
+</style>
+
+
+<h2>Upload Network Traffic Dataset</h2>
+
+<p class="muted">
+This system implements a <b>Hybrid Intrusion Detection System</b>
+combining machine learning with signature-based detection.
+</p>
+
+<img
+src="{% static 'images/network_lines.jpg' %}"
+style="width:100%;border-radius:12px;margin-bottom:20px">
+
+
+<p class="muted">
+Uploading a dataset initiates the detection pipeline used
+for identifying malicious network behavior.
+</p>
+
+
+<!-- PIPELINE VISUAL -->
+
+<div class="pipeline">
+
+<div class="step">Upload</div>
+<div class="arrow">→</div>
+
+<div class="step">Preprocess</div>
+<div class="arrow">→</div>
+
+<div class="step">Train</div>
+<div class="arrow">→</div>
+
+<div class="step">Predict</div>
+<div class="arrow">→</div>
+
+<div class="step">Hybrid Decision</div>
+
 </div>
 
+
+<hr style="margin:30px 0">
+
+
+<!-- DROP ZONE -->
+
+<div class="drop-zone">
+
+<h3>Drag & Drop Dataset Here</h3>
+
+<p class="muted">or select a CSV file</p>
+
+<form method="post" enctype="multipart/form-data" style="margin-top:20px">
+
+{% csrf_token %}
+
+<input type="file"
+       id="fileInput"
+       name="file"
+       accept=".csv"
+       required
+       style="display:none"
+       onchange="showFileName(this)">
+
+<button type="button"
+        class="btn"
+        onclick="document.getElementById('fileInput').click()">
+
+Select Dataset
+
+</button>
+
+<p id="fileName" class="muted" style="margin-top:10px"></p>
+
+
+</form>
+
+</div>
+
+
+<div class="progress">
+<div id="progressBar" class="progress-bar"></div>
+</div>
+
+
+{% if messages %}
+
+<div style="margin-top:10px">
+
+{% for msg in messages %}
+
+<div class="{{ msg.tags }}">{{ msg }}</div>
+
+{% endfor %}
+
+</div>
+
+{% endif %}
+
+
+<div class="muted" style="margin-top:12px">
+Example dataset: <code>cicids2017_cleaned.csv</code>
+</div>
+
+
+<hr style="margin:30px 0">
+
+{% if request.session.pipeline_state == "UPLOADED" %}
+
+<h3>Pipeline Execution Modes</h3>
+
+<div class="mode-buttons">
+
+<div class="mode-card">
+
+<h4>Automated Mode</h4>
+
+<p class="muted">
+Runs the entire pipeline automatically from upload to dashboard.
+</p>
+
+<form method="post" action="{% url 'run_full_pipeline' %}">
+{% csrf_token %}
+<button class="btn">
+Run Full Pipeline (Automated)
+</button>
+</form>
+
+</div>
+
+
+<div class="mode-card">
+
+<h4>Manual / Learning Mode</h4>
+
+<p class="muted">
+Run each stage manually to understand the IDS pipeline.
+</p>
+
+<a href="{% url 'preprocess' %}" class="btn">
+Run Pipeline (Manual Mode)
+</a>
+
+</div>
+
+</div>
+
+{% endif %}
+
+
+<!-- DATA PREVIEW -->
+
+<table id="previewTable" class="preview-table" style="display:none">
+<thead>
+<tr id="tableHead"></tr>
+</thead>
+<tbody id="tableBody"></tbody>
+</table>
+
+
 <script>
-typeWriter(
-  "narrative",
-  "System initialized. Awaiting network traffic dataset. Uploading a CSV begins the Hybrid Intrusion Detection pipeline."
-);
+
+/* FILE PREVIEW */
+
+document.getElementById("fileInput").addEventListener("change",function(){
+
+const file=this.files[0]
+
+if(!file) return
+
+simulateProgress()
+
+const reader=new FileReader()
+
+reader.onload=function(e){
+
+const lines=e.target.result.split("\n").slice(0,6)
+
+const headers=lines[0].split(",")
+
+let headHTML=""
+
+headers.forEach(h=>headHTML+=`<th>${h}</th>`)
+
+document.getElementById("tableHead").innerHTML=headHTML
+
+let bodyHTML=""
+
+for(let i=1;i<lines.length;i++){
+
+let cols=lines[i].split(",")
+
+bodyHTML+="<tr>"
+
+cols.forEach(c=>bodyHTML+=`<td>${c}</td>`)
+
+bodyHTML+="</tr>"
+
+}
+
+document.getElementById("tableBody").innerHTML=bodyHTML
+
+document.getElementById("previewTable").style.display="table"
+
+}
+
+reader.readAsText(file)
+
+})
+
+
+/* PROGRESS BAR */
+
+function simulateProgress(){
+
+const bar=document.getElementById("progressBar")
+
+bar.style.width="30%"
+
+setTimeout(()=>bar.style.width="70%",600)
+
+setTimeout(()=>bar.style.width="100%",1200)
+
+}
+
 </script>
+
 {% endblock %}

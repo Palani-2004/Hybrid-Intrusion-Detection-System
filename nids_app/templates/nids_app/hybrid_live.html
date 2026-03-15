@@ -1,71 +1,255 @@
 {% extends 'nids_app/base.html' %}
+{% block title %}Live Hybrid Detection{% endblock %}
+
 {% block content %}
-<div class="container mt-4">
-  <h2>Hybrid Detection (Background Mode)</h2>
 
-  <button id="startBtn" class="btn">Run Hybrid Detection (Background)</button>
-  <div id="status" class="mt-3 text-light bg-dark p-3 rounded" style="min-height:200px; white-space:pre-wrap; font-family:monospace;">
-    Status: Waiting...
-  </div>
+<style>
 
-  <div class="mt-3">
-    <a href="{% url 'download_hybrid' %}" id="downloadBtn" class="btn" style="display:none;">Download hybrid_output.csv</a>
-  </div>
+/* GRID */
 
-  <div style="margin-top:12px">
-    <a href="/" class="btn">Back to Home</a>
-  </div>
+.live-grid{
+display:grid;
+grid-template-columns:1fr 1fr 1fr;
+gap:40px;
+align-items:center;
+margin-top:30px;
+}
+
+/* DEVICE */
+
+.device{
+text-align:center;
+padding:25px;
+background:white;
+border-radius:18px;
+box-shadow:0 12px 40px rgba(0,0,0,0.08);
+}
+
+/* IDS CORE */
+
+.ids-core{
+background:#E8F4FF;
+padding:30px;
+border-radius:20px;
+text-align:center;
+font-weight:600;
+}
+
+/* NETWORK LINE */
+
+.network-line{
+
+height:4px;
+background:#4DA6FF;
+position:relative;
+
+}
+
+/* PACKET */
+
+.packet{
+
+width:14px;
+height:14px;
+
+background:#1E88E5;
+
+border-radius:50%;
+
+position:absolute;
+
+top:-5px;
+
+animation:packetMove 3s linear infinite;
+
+box-shadow:0 0 10px rgba(30,136,229,0.7);
+
+}
+
+@keyframes packetMove{
+
+0%{left:0}
+100%{left:100%}
+
+}
+
+/* ATTACK ALERT */
+
+.alert-box{
+
+margin-top:40px;
+
+padding:20px;
+
+background:#fff;
+
+border-radius:16px;
+
+box-shadow:0 10px 35px rgba(0,0,0,0.08);
+
+}
+
+/* STATUS */
+
+.status{
+
+font-weight:600;
+
+margin-top:10px;
+
+}
+
+/* LOG */
+
+.log-box{
+
+margin-top:20px;
+
+background:#0f172a;
+
+color:#22c55e;
+
+padding:15px;
+
+border-radius:10px;
+
+font-family:monospace;
+
+height:180px;
+
+overflow:auto;
+
+}
+
+</style>
+
+
+
+<h2>Live Hybrid Intrusion Detection</h2>
+
+<p class="muted">
+This simulation demonstrates real-time traffic monitoring between two devices while the IDS engine analyzes packets.
+</p>
+
+
+
+<div class="live-grid">
+
+<div class="device">
+
+<h3>Laptop A</h3>
+
+<p class="muted">Traffic Source</p>
+
 </div>
 
+
+
+<div>
+
+<div class="ids-core">
+
+Hybrid IDS Engine
+
+<div class="status" id="status">
+Monitoring Network
+</div>
+
+</div>
+
+<div class="network-line">
+
+<div class="packet"></div>
+
+</div>
+
+</div>
+
+
+
+<div class="device">
+
+<h3>Laptop B</h3>
+
+<p class="muted">Destination Device</p>
+
+</div>
+
+</div>
+
+
+
+<div class="alert-box">
+
+<h3>Live Detection Logs</h3>
+
+<div id="logBox" class="log-box">
+
+Initializing IDS...
+
+</div>
+
+<button class="btn" onclick="startSimulation()">
+Start Live Simulation
+</button>
+
+</div>
+
+
+
 <script>
-async function startHybrid() {
-  document.getElementById("status").textContent = "Starting Hybrid Detection...";
-  // POST to background-run endpoint
-  const resp = await fetch("{% url 'run_hybrid_background' %}", {
-    method: 'POST',
-    headers: {
-      'X-CSRFToken': getCookie('csrftoken'),
-      'X-Requested-With': 'XMLHttpRequest'
-    }
-  });
-  const data = await resp.json();
-  if (data.status === "started") {
-    pollStatus();
-  } else {
-    document.getElementById("status").textContent = data.message || JSON.stringify(data);
-  }
+
+let running=false
+
+function startSimulation(){
+
+if(running) return
+
+running=true
+
+const log=document.getElementById("logBox")
+
+const status=document.getElementById("status")
+
+let count=0
+
+setInterval(()=>{
+
+count++
+
+let types=[
+"Normal Traffic",
+"DoS Attack Detected",
+"Port Scan Detected",
+"Benign Flow",
+"Brute Force Attempt"
+]
+
+let event=types[Math.floor(Math.random()*types.length)]
+
+let time=new Date().toLocaleTimeString()
+
+log.innerHTML+=`<br>[${time}] ${event}`
+
+log.scrollTop=log.scrollHeight
+
+if(event.includes("Attack")){
+
+status.innerHTML="⚠ Intrusion Detected"
+status.style.color="#ef4444"
+
+}
+else{
+
+status.innerHTML="Monitoring Network"
+status.style.color="#16a34a"
+
 }
 
-async function pollStatus() {
-  const interval = setInterval(async () => {
-    const res = await fetch("{% url 'hybrid_status' %}");
-    const data = await res.json();
-    document.getElementById("status").textContent = data.log || JSON.stringify(data);
-    if (data.status === "completed" || data.status === "error") {
-      clearInterval(interval);
-      if (data.status === "completed") {
-        document.getElementById("downloadBtn").style.display = 'inline-block';
-      }
-    }
-  }, 2000);
+},2000)
+
 }
 
-// CSRF helper
-function getCookie(name) {
-  let cookieValue = null;
-  if (document.cookie && document.cookie !== '') {
-    const cookies = document.cookie.split(';');
-    for (let i = 0; i < cookies.length; i++) {
-      const cookie = cookies[i].trim();
-      if (cookie.substring(0, name.length + 1) === (name + '=')) {
-        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-        break;
-      }
-    }
-  }
-  return cookieValue;
-}
-
-document.getElementById("startBtn").addEventListener("click", startHybrid);
 </script>
+
 {% endblock %}
